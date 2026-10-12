@@ -1,46 +1,5 @@
-import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
-import { MEMBERS, type MemberId } from '../data/family'
+import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { Icon } from './Icon'
-
-// ── Stamp: family members appear as postage stamps, the way their faces
-// arrive on letters and in the address book by the phone.
-export function Stamp({ id, size = 64, dim = false, title }: { id: MemberId | 'other'; size?: number; dim?: boolean; title?: string }) {
-  const mask = useId()
-  const w = size
-  const h = Math.round(size * 1.16)
-  const r = Math.max(1.6, size * 0.045)
-  const step = r * 3.1
-  const holes: [number, number][] = []
-  for (let x = step / 2; x < w; x += step) holes.push([x, 0], [x, h])
-  for (let y = step / 2; y < h; y += step) holes.push([0, y], [w, y])
-  const m = id === 'other' ? null : MEMBERS[id]
-  const color = m ? m.color : 'var(--navy-2)'
-  const inset = r * 2.1
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className={`k-stamp${dim ? ' is-dim' : ''}`} role="img" aria-label={title ?? m?.name ?? 'Someone official'}>
-      <defs>
-        <mask id={mask}>
-          <rect width={w} height={h} fill="#fff" />
-          {holes.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r={r} fill="#000" />
-          ))}
-        </mask>
-      </defs>
-      <rect width={w} height={h} fill="var(--enamel)" mask={`url(#${mask})`} />
-      <rect x={inset} y={inset} width={w - inset * 2} height={h - inset * 2} rx={size * 0.04} fill={color} />
-      {m ? (
-        <text x={w / 2} y={h * 0.6} textAnchor="middle" fontFamily="var(--font-display)" fontSize={size * 0.5} fill="var(--enamel)">
-          {m.name[0]}
-        </text>
-      ) : (
-        <g transform={`translate(${w / 2 - size * 0.22} ${h / 2 - size * 0.24}) scale(${(size * 0.44) / 32})`} stroke="var(--enamel)" fill="none" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4.5 12.5 16 5.5l11.5 7zM8 15.5v7.5M13 15.5v7.5M19 15.5v7.5M24 15.5v7.5M5.5 23h21M4 26.5h24" />
-        </g>
-      )}
-      <rect x={inset} y={h - inset - size * 0.16} width={w - inset * 2} height={size * 0.16} fill="rgba(0,0,0,.18)" />
-    </svg>
-  )
-}
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   tone?: 'ink' | 'paper' | 'red' | 'yolk' | 'ghost'
@@ -61,7 +20,12 @@ export function Btn({ tone = 'ink', big, icon, iconRight, children, className = 
   )
   if (href) {
     return (
-      <a className={cls} href={href} onClick={rest.onClick as unknown as React.MouseEventHandler<HTMLAnchorElement>}>
+      <a
+        className={cls}
+        href={href}
+        onClick={rest.onClick as unknown as React.MouseEventHandler<HTMLAnchorElement>}
+        {...(href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      >
         {inner}
       </a>
     )

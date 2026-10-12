@@ -1,91 +1,69 @@
-import type { Profile } from '../data/family'
+import type { Finding, Patterns } from './types'
 
-// F-D1: compares the *words* of a message with how that person talks to
-// Margaret (F-B1). Pure client-side heuristics on mock transcripts. It never
-// returns a verdict about who is speaking — only what matches and what doesn't.
-
-export type Tone = 'match' | 'differs' | 'flag' | 'info'
-export interface Finding {
-  tone: Tone
-  text: string
-}
-export interface CheckResult {
-  summary: 'matches' | 'mixed' | 'differs' | 'no-profile'
-  headline: string
-  findings: Finding[]
-}
+// Compares the WORDS of a call or voice note with how that person talks
+// (PRD F-B1, F-D1), and spots the scam script (PRD §3: urgency, secrecy,
+// new number, irreversible payment). Pure text heuristics.
 
 const norm = (s: string) => s.toLowerCase().replace(/[’‘]/g, "'").replace(/[“”]/g, '"')
 const has = (text: string, phrase: string) =>
   new RegExp(`(^|[^a-z])${phrase.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-z])`).test(text)
 
-const FLAGS: { re: RegExp; text: string }[] = [
+const SCAM: { re: RegExp; text: string }[] = [
   { re: /new number|my phone('s| is)? (broken|broke|lost|dead|smashed)|lost my phone|changed my number/, text: 'Says it’s a new number' },
-  { re: /(don't|do not) (bother )?(call|ring)|old number|can't (call|ring) me/, text: 'Tells you not to ring the usual number' },
-  { re: /\b(money|pay|paying|bill|bail|transfer|loan|fee|send it|\$\d|£\d)/, text: 'Asks for money' },
-  { re: /\b(today|right now|urgent|asap|immediately|hurry|quick(ly)?)\b|send it now/, text: 'Wants it done fast' },
+  { re: /(don't|do not) (bother )?(call|ring)|old number|can't (call|ring) me/, text: 'Tells you not to call the usual number' },
+  { re: /\b(money|pay|paying|bill|bail|transfer|loan|fee|wire|send it|\$\d|£\d)/, text: 'Asks for money' },
+  { re: /\b(today|right now|urgent|asap|immediately|hurry|quick(ly)?)\b|send it now/, text: 'Pushes you to act fast' },
   { re: /(don't|do not) tell|keep (this|it) (between|secret|quiet)|our secret|nobody (needs to|can) know/, text: 'Asks you to keep it secret' },
-  { re: /gift ?cards?|itunes|google play|steam card/, text: 'Wants gift cards — family and banks don’t ask for these' },
+  { re: /gift ?cards?|itunes|google play|steam card/, text: 'Wants gift cards' },
   { re: /bitcoin|crypto|btc/, text: 'Wants Bitcoin or crypto' },
-  { re: /courier|(come|send someone) (to|round)|pick (it )?up|collect (it|the)/, text: 'Someone will come to collect it' },
+  { re: /courier|(come|send someone) (to|round)|pick (it )?up|collect (it|the)/, text: 'Someone will come to collect cash' },
+  { re: /arrest|police|jail|lawyer|accident|hospital|crash/, text: 'An emergency story (arrest, accident, hospital)' },
 ]
 
-export function checkWords(raw: string, profile: Profile, name: string): CheckResult {
-  const text = norm(raw)
-  const findings: Finding[] = []
+export function scamSigns(raw: string): string[] {
+  const t = norm(raw)
+  return SCAM.filter((s) => s.re.test(t)).map((s) => s.text)
+}
 
-  for (const f of FLAGS) if (f.re.test(text)) findings.push({ tone: 'flag', text: f.text })
-  const flags = findings.length
-
-  if (profile.consent !== 'agreed') {
-    const why =
-      profile.consent === 'paused'
-        ? `${name} has paused their pattern, so there’s nothing to compare with.`
-        : `${name} hasn’t agreed to a pattern yet, so there’s nothing to compare with.`
-    findings.unshift({ tone: 'info', text: why })
-    return {
-      summary: 'no-profile',
-      headline: flags ? `Check with ${name} before doing anything.` : `We can’t compare this with how ${name} talks.`,
-      findings,
-    }
+export function compareWords(raw: string, p: Patterns | undefined, name: string): { summary: 'matches' | 'mixed' | 'differs' | 'no-profile' | 'none'; findings: Finding[] } {
+  const text = norm(raw).trim()
+  if (!text) return { summary: 'none', findings: [] }
+  if (!p || (!p.callsThem.length && !p.greetings.length)) {
+    return { summary: 'no-profile', findings: [{ tone: 'info', text: `${name} hasn’t added speech patterns yet, so we can only check the voice.` }] }
   }
-
+  const findings: Finding[] = []
   let matches = 0
   let differs = 0
-  const usual = profile.callsHer[0]
-
-  for (const n of profile.neverSays) {
+  for (const n of p.neverSays) {
     if (has(text, n)) {
-      findings.unshift({ tone: 'differs', text: `Calls you “${n}” — ${name} says “${usual}”` })
+      findings.push({ tone: 'differs', text: `Says “${n}” — ${name} says “${p.callsThem[0] ?? '…'}”` })
       differs++
     }
   }
-  const used = profile.callsHer.find((n) => has(text, n))
+  const used = p.callsThem.find((n) => has(text, n))
   if (used) {
-    findings.unshift({ tone: 'match', text: `Calls you “${used}”, like ${name} does` })
+    findings.push({ tone: 'match', text: `Says “${used}”, like ${name} does` })
     matches++
   }
-
   const opening = text.split(/[,.!?—-]/)[0].trim()
-  const greet = profile.greetings.find((g) => opening.startsWith(norm(g)) || text.startsWith(norm(g)))
+  const greet = p.greetings.find((g) => opening.startsWith(norm(g)) || text.startsWith(norm(g)))
   if (greet) {
-    findings.unshift({ tone: 'match', text: `Starts with “${greet}”, like ${name}` })
+    findings.push({ tone: 'match', text: `Opens with “${greet}”, like ${name}` })
     matches++
-  } else if (/^(hello|hi|hey|good (morning|afternoon|evening)|mom|mum|ma|nan|gran)/.test(opening)) {
-    const first = raw.split(/[,.!?—-]/)[0].trim()
-    findings.unshift({ tone: 'differs', text: `Starts with “${first}” — ${name} starts with “${profile.greetings[0]}”` })
+  } else if (p.greetings.length && /^(hello|hi|hey|good (morning|afternoon|evening)|mom|mum|ma|nan|gran|dad)/.test(opening)) {
+    findings.push({ tone: 'differs', text: `Opens with “${raw.split(/[,.!?—-]/)[0].trim()}” — ${name} usually says “${p.greetings[0]}”` })
     differs++
   }
-
-  const bye = profile.signoffs.find((s) => has(text, s))
+  const bye = p.signoffs.find((s) => has(text, s))
   if (bye) {
     findings.push({ tone: 'match', text: `Ends with “${bye}”, like ${name}` })
     matches++
   }
-
-  if (differs && flags) return { summary: 'differs', headline: `This isn’t how ${name} talks to you.`, findings }
-  if (differs) return { summary: 'mixed', headline: `Some of this isn’t how ${name} usually talks to you.`, findings }
-  if (flags) return { summary: 'mixed', headline: `It asks for something. Check with ${name} first.`, findings }
-  if (matches) return { summary: 'matches', headline: `The words sound like ${name}.`, findings }
-  return { summary: 'mixed', headline: `Not enough here to compare.`, findings }
+  const phrase = p.phrases.find((s) => has(text, s))
+  if (phrase) {
+    findings.push({ tone: 'match', text: `Uses “${phrase}”, one of ${name}’s phrases` })
+    matches++
+  }
+  if (!findings.length) findings.push({ tone: 'info', text: `None of ${name}’s usual words came up. That isn’t a red flag on its own.` })
+  return { summary: differs ? 'differs' : matches ? 'matches' : 'mixed', findings }
 }

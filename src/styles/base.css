@@ -95,11 +95,9 @@ input, textarea { font: inherit; color: inherit; }
   min-height: 44px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; justify-content: center;
 }
 .k-btn--ghost .k-btn__label { flex: none; }
-.k-btn--big { min-height: 78px; font-size: 23px; border-radius: 20px; padding: 14px 22px; gap: 14px; border-width: 3px; }
+.k-btn--big { min-height: 62px; font-size: 19px; border-radius: 18px; padding: 12px 22px; gap: 12px; border-width: 3px; }
 
 /* ── Stamps ─────────────────────────────────────────────────────────── */
-.k-stamp { flex: none; display: block; filter: drop-shadow(0 1px 0 rgba(20, 35, 61, 0.25)); }
-.k-stamp.is-dim { opacity: 0.4; filter: grayscale(1); }
 
 /* ── Pills, dots, toggles, segmented ───────────────────────────────── */
 .k-pill {

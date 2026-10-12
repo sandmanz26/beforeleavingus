@@ -1,9 +1,9 @@
 {
-  "name": "kinvoice-prototype",
+  "name": "kinvoice-web",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.4.0",
   "type": "module",
-  "description": "KinVoice — front-end prototype of family speech-pattern verification against AI voice scams. Mock data only.",
+  "description": "KinVoice web: register, teach KinVoice your voice and speech patterns, invite family, and check suspicious calls or voice notes. Front-end only; audio analysed in the browser.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
