@@ -64,6 +64,7 @@ input, textarea { font: inherit; color: inherit; }
 /* ── Buttons: enamel slabs with a pressable bottom edge ───────────── */
 .k-btn {
   --edge: var(--navy-deep);
+  text-decoration: none;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -132,58 +133,6 @@ input, textarea { font: inherit; color: inherit; }
 .k-seg button { padding: 7px 12px; border-radius: 9px; font-weight: 700; font-size: 14px; min-height: 36px; }
 .k-seg button.is-on { background: var(--navy); color: var(--enamel); }
 
-/* ── Spec tags (PM annotation layer) ───────────────────────────────── */
-.k-spec { position: absolute; z-index: 5; display: inline-flex; gap: 3px; pointer-events: auto; }
-.k-spec--tr { top: -9px; right: 8px; }
-.k-spec--tl { top: -9px; left: 8px; }
-.k-spec--inline { position: relative; top: auto; right: auto; margin-right: 4px; vertical-align: middle; }
-.k-spec__tag {
-  /* v2: plain white luggage tags — yellow belongs to the help/pause system (roast #11) */
-  font: 700 10.5px/1 var(--font-mono); letter-spacing: 0.02em;
-  padding: 4px 6px 3px 13px; border-radius: 3px 7px 7px 3px;
-  background: #fff radial-gradient(circle at 6px 50%, var(--duck-3) 1.8px, transparent 2.2px);
-  color: var(--navy); box-shadow: 0 0 0 1.5px var(--navy), 1px 2px 0 var(--navy);
-  white-space: nowrap;
-}
-.k-spec__tag { cursor: pointer; }
-.k-spec__tag:hover { background-color: var(--duck); }
-
-/* ── Phone frame ───────────────────────────────────────────────────── */
-.k-phone {
-  position: relative;
-  transform: translateZ(0); /* makes the phone the containing block for OS overlays */
-  width: 375px;
-  height: min(820px, calc(100dvh - 166px));
-  min-height: 600px;
-  display: flex; flex-direction: column;
-  background: var(--enamel);
-  border: 9px solid var(--navy);
-  border-radius: 48px;
-  box-shadow: 0 3px 0 var(--navy-2), 0 34px 60px -34px rgba(8, 17, 31, 0.6);
-  overflow: hidden;
-  isolation: isolate;
-}
-.k-phone__status {
-  flex: none; height: 34px; padding: 4px 26px 0;
-  display: flex; align-items: center; justify-content: space-between;
-  font: 700 14px var(--font-mono);
-  background: var(--enamel);
-  z-index: 3;
-}
-.k-phone__glyphs { display: inline-flex; gap: 6px; align-items: center; }
-.k-phone__screen { position: relative; flex: 1; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; }
-
-.k-busy {
-  position: absolute; inset: 0; z-index: 20;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  padding: 40px; text-align: center;
-  background: rgba(20, 35, 61, 0.88); color: var(--enamel);
-  backdrop-filter: blur(3px);
-}
-.k-busy__title { font-weight: 800; font-size: 20px; }
-.k-busy__sub { opacity: 0.85; margin-bottom: 10px; }
-.k-busy .k-btn { width: auto; }
-
 /* ── Kettle dial ───────────────────────────────────────────────────── */
 .k-kettle { display: block; }
 .k-steam__p { animation: k-steam 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
@@ -195,47 +144,3 @@ input, textarea { font: inherit; color: inherit; }
   100% { opacity: 0; transform: translateY(-10px) scaleY(1.1); }
 }
 
-/* ── OS-level chrome (not KinVoice): incoming call + banners ───────── */
-.os-call {
-  position: fixed; inset: 34px 0 0; z-index: 10;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 56px 24px 40px;
-  background: linear-gradient(180deg, #24334d, #0f1a2c);
-  color: #fff; text-align: center;
-}
-.os-call__label { font-size: 15px; opacity: 0.75; }
-.os-call__who { font-size: 34px; font-weight: 600; margin-top: 8px; letter-spacing: -0.01em; }
-.os-call__num { opacity: 0.75; margin-top: 4px; font-family: var(--font-mono); }
-.os-note {
-  position: relative;
-  margin-top: 34px; padding: 16px 18px 18px; border-radius: 18px;
-  background: var(--enamel); color: var(--navy); text-align: left;
-  font-size: 18px; line-height: 1.35;
-  box-shadow: 0 0 0 3px var(--yolk);
-}
-.os-note__brand { font: 700 12px var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin-bottom: 6px; }
-.os-call__actions { margin-top: auto; display: flex; justify-content: space-between; width: 100%; padding: 0 12px; }
-.os-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 15px; }
-.os-btn svg { width: 76px; height: 76px; padding: 20px; border-radius: 50%; }
-.os-btn--decline svg { background: #e0443a; }
-.os-btn--accept svg { background: var(--os-green); }
-
-.os-banner {
-  position: relative; margin: 8px 10px 0; z-index: 12; width: calc(100% - 20px);
-  display: grid; gap: 2px; text-align: left;
-  padding: 12px 14px; border-radius: 18px;
-  background: rgba(252, 253, 251, 0.97);
-  box-shadow: 0 0 0 2px var(--navy), 0 14px 30px -10px rgba(8, 17, 31, 0.5);
-  animation: os-drop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
-}
-.os-banner__app { font: 700 11px var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); }
-.os-banner b { font-size: 16px; }
-.os-banner span:last-child { font-size: 14px; color: var(--ink-2); }
-@keyframes os-drop { from { transform: translateY(-120%); } }
-
-/* Family calls (v2, roast #8) */
-.os-call--family { gap: 6px; padding-top: 70px; }
-.os-call--family .k-stamp { margin: 6px 0 4px; }
-.os-call--family .os-call__num { max-width: 26ch; line-height: 1.4; }
-.os-call--live { background: linear-gradient(180deg, #1f5b3d, #0f2a1d); }
-.os-call__actions--one { justify-content: center; }

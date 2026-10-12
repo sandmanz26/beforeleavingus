@@ -45,21 +45,13 @@ export interface Incident {
   closed: null | { how: 'hung-up' | 'done'; at: number }
 }
 
-export interface Call {
-  state: 'ringing' | 'active' | 'ended' | 'missed'
+// Margaret's recent calls, as KinVoice's call screening sees them (F-C6, F-A2).
+export interface RecentCall {
+  id: string
   number: string
-  shownAs?: MemberId
-  saved: boolean
-  spam?: boolean
-  startedAt: number
-}
-
-// A call between two family members' saved numbers (P-10: calling back works).
-export interface FamilyCall {
-  from: MemberId
-  to: MemberId
-  state: 'ringing' | 'active' | 'missed'
-  startedAt: number
+  savedAs?: MemberId // number is saved in her contacts as this family member
+  kind: 'unknown' | 'family' | 'sales'
+  at: string
 }
 
 export interface LogEntry {
@@ -82,29 +74,20 @@ export interface Away {
 }
 
 export interface World {
-  session: number // bumps on every story load so each phone starts fresh
+  version: number
   now: number
-  speed: number
-  scenarioId: string | null
   profiles: Record<Exclude<MemberId, 'margaret'>, Profile>
   questions: Question[]
   order: MemberId[] // phone tree after the impersonated person
   away: Partial<Record<MemberId, Away>>
-  busy: Partial<Record<MemberId, string>>
-  autoReplies: { member: MemberId; afterSec: number; reply: Reply }[]
   settings: Settings
-  call: Call | null
-  familyCall: FamilyCall | null
-  queue: { at: number; type: 'ring' | 'spam' | 'spam-end' | 'consent-ask'; payload?: string }[]
+  calls: RecentCall[]
   incident: Incident | null
   pastIncidents: Incident[]
   messages: VoiceMessage[]
   freshMessage: string | null
-  quietToday: number
   log: LogEntry[]
   drill: 'none' | 'scheduled' | 'done'
-  pastLoss: boolean
   disclosedTo: MemberId | null
   robNudged: boolean
-  seenBy: Partial<Record<MemberId, string[]>> // dismissed banner ids
 }

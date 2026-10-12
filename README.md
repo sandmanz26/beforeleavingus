@@ -1,7 +1,7 @@
-# KinVoice: clickable prototype
+# KinVoice
 
-A front-end-only prototype of **KinVoice**, a family speech-pattern check against AI voice-clone scams, built from *PRD KinVoice v2*.
-It uses React, TypeScript and Vite. There is no backend: four family phones run off one shared, simulated world with mock data, so a tap on one phone shows up on the others.
+**KinVoice** is a family speech-pattern check against AI voice-clone scams, built from *PRD KinVoice v2*.
+It is a front-end-only React web app (React 19, TypeScript, Vite) running on mock data. There is no backend.
 
 ```bash
 npm install
@@ -10,24 +10,25 @@ npm run copy-guard   # PRD rules: no verdict words in UI copy; every feature tra
 npm run build
 ```
 
-## How to demo
-1. Pick a **story** (S-01 to S-08 from the PRD) on the left, or from **Stories** on smaller screens. Each story resets the family and sets the scene. The steps tell you which phone to use.
-2. Drive the phones by hand: Margaret (protected, 79), David (circle keeper), and Emma and Rob, who share the third slot.
-3. **Spec tags** shows every feature's PRD reference where it lives. Click a tag for its card.
-4. **Feature map** shows the attack chain T-01 to T-07, problem coverage, and every scenario, each playable.
-5. **Design review** is the roast of v1: findings, v1 screenshots, and what v2 changed.
-6. The clock runs at 10× by default, so the 45-second phone-tree wait takes 4.5 seconds and the 10-minute pause takes about a minute.
+## Using it
+1. Open the app and pick who's using this phone: **Margaret** (protected, 79), **David** (circle keeper), **Emma** (member) or **Rob** (backup).
+2. Each person gets their own KinVoice. Margaret's is built for an 80-year-old in a panic. David's manages the circle. Emma's and Rob's answer “Is this you?” on their own phones.
+3. All profiles share one sample family, saved on this device. If Margaret taps the yellow button and says the caller claims to be Emma, switch to Emma (tap your stamp, top right, then **Switch profile**). Her request is waiting there. Answer it and switch back to Margaret to see the result.
+4. Timers run in real time: the phone tree asks the next person after 45 seconds, and the pause lasts 10 minutes.
+5. **Reset sample data** on the profile screen starts the family over.
+
+“Ring David” and similar buttons are ordinary `tel:` links, so on a phone they open the dialler.
 
 ## Where things are
 ```
 src/
-  data/        prd.ts (P/T/S/F registry) · family.ts · scenarios.ts · messages.ts · roast.ts
-  store/       world.tsx — the shared simulation: incidents, phone tree, family calls, consent
-  lib/         patternCheck.ts — F-D1 word comparison (never a verdict)
+  shell/       Shell.tsx — profile picker, profile sheet, app shell
   apps/        margaret/ david/ emma/ rob/ shared/AskCard.tsx
-  components/  Icon (bespoke set) · Kettle (signature dial) · Phone · FamilyCall · bits
-  stage/       Stage · Storyboard · FeatureMap · SpecSheet · Review
+  store/       world.tsx — the family's shared state: checks, phone tree, consent (saved to localStorage)
+  lib/         patternCheck.ts — F-D1 word comparison (never a verdict)
+  data/        family.ts · messages.ts · prd.ts (feature → P/T/S traceability)
+  components/  Icon (bespoke set) · Kettle (pause dial) · bits
 docs/
   PRODUCT.md   principles, confirmation rule, feature registry, design system, hypotheses
-  ROAST.md     the v1 critique and the v2 fixes
+  ROAST.md     design critiques and what changed because of them
 ```

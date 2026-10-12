@@ -1,6 +1,5 @@
 import { useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { MEMBERS, type MemberId } from '../data/family'
-import { useUI } from '../stage/ui'
 import { Icon } from './Icon'
 
 // ── Stamp: family members appear as postage stamps, the way their faces
@@ -48,40 +47,29 @@ type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   big?: boolean
   icon?: string
   iconRight?: string
+  href?: string // e.g. tel: — ringing someone opens the phone's own dialler
   children: ReactNode
 }
-export function Btn({ tone = 'ink', big, icon, iconRight, children, className = '', ...rest }: BtnProps) {
-  return (
-    <button className={`k-btn k-btn--${tone}${big ? ' k-btn--big' : ''} ${className}`} {...rest}>
+export function Btn({ tone = 'ink', big, icon, iconRight, children, className = '', href, ...rest }: BtnProps) {
+  const cls = `k-btn k-btn--${tone}${big ? ' k-btn--big' : ''} ${className}`
+  const inner = (
+    <>
       {icon && <Icon name={icon} size={big ? 34 : 24} stroke={big ? 2.6 : 2.4} />}
       <span className="k-btn__label">{children}</span>
       {iconRight && <Icon name={iconRight} size={big ? 30 : 22} className="k-btn__end" />}
-    </button>
+    </>
   )
-}
-
-// ── Spec tag: the PM annotation layer. Every feature carries its PRD
-// references; turning “Spec tags” on in the top bar reveals them.
-export function Spec({ ids, place = 'tr' }: { ids: string; place?: 'tr' | 'tl' | 'inline' }) {
-  const { specs, openFeature } = useUI()
-  if (!specs) return null
+  if (href) {
+    return (
+      <a className={cls} href={href} onClick={rest.onClick as unknown as React.MouseEventHandler<HTMLAnchorElement>}>
+        {inner}
+      </a>
+    )
+  }
   return (
-    <span className={`k-spec k-spec--${place}`}>
-      {ids.split(' ').map((id) => (
-        // a span, not a <button>: tags often sit inside the very button they annotate
-        <span
-          key={id}
-          role="button"
-          tabIndex={0}
-          className="k-spec__tag"
-          title={`Open ${id} in the spec`}
-          onClick={(e) => { e.stopPropagation(); openFeature(id) }}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openFeature(id) } }}
-        >
-          {id}
-        </span>
-      ))}
-    </span>
+    <button className={cls} {...rest}>
+      {inner}
+    </button>
   )
 }
 

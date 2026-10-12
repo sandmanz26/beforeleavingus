@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Btn, Pill, Spec, Stamp } from '../../components/bits'
+import { Btn, Pill, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { useWorld } from '../../store/world'
 import { AnsweredCard, AskCard } from '../shared/AskCard'
-import { FamilyCallLayer } from '../../components/FamilyCall'
+import { MeButton } from '../../shell/Shell'
 
 type Screen = 'home' | 'pattern' | 'footprint' | 'consent'
 
@@ -16,14 +16,13 @@ export function EmmaApp() {
   if (inc && !inc.closed && mine?.state === 'asking')
     return (
       <div className="e-app e-app--ask">
-        <FamilyCallLayer me="emma" />
+        <div className="ask-top"><MeButton /></div>
         <AskCard me="emma" inc={inc} />
       </div>
     )
 
   return (
     <div className="e-app">
-      <FamilyCallLayer me="emma" />
       {screen === 'home' && <Home go={setScreen} />}
       {screen === 'pattern' && <Pattern back={() => setScreen('home')} />}
       {screen === 'footprint' && <Footprint back={() => setScreen('home')} />}
@@ -49,7 +48,10 @@ function Home({ go }: { go: (s: Screen) => void }) {
 
   return (
     <div className="e-page">
-      <p className="e-eyebrow">Nan’s circle</p>
+      <div className="e-top">
+        <p className="e-eyebrow">Nan’s circle</p>
+        <MeButton />
+      </div>
       <h1 className="e-title">Hiya, Emma.</h1>
 
       {inc && inc.asks.some((a) => a.member === 'emma' && a.state === 'answered') && <AnsweredCard me="emma" inc={inc} />}
@@ -60,7 +62,6 @@ function Home({ go }: { go: (s: Screen) => void }) {
       </section>
 
       <section className="e-card">
-        <Spec ids="F-A4" />
         <h2>Can’t pick up for a while?</h2>
         {away ? (
           <div className="e-away">
@@ -83,7 +84,6 @@ function Home({ go }: { go: (s: Screen) => void }) {
       </section>
 
       <button className="e-row" onClick={() => go('pattern')}>
-        <Spec ids={stale ? 'F-B1 F-B4' : 'F-B1 F-B2'} />
         <span className="e-row__icon"><Icon name="voicenote" size={24} /></span>
         <span className="e-row__body">
           <b>How you talk to Nan</b>
@@ -96,7 +96,6 @@ function Home({ go }: { go: (s: Screen) => void }) {
       </button>
 
       <button className="e-row" onClick={() => go('footprint')}>
-        <Spec ids="F-E3" />
         <span className="e-row__icon"><Icon name="footprint" size={24} /></span>
         <span className="e-row__body">
           <b>Your voice online</b>
@@ -106,7 +105,6 @@ function Home({ go }: { go: (s: Screen) => void }) {
       </button>
 
       <button className="e-row" onClick={() => go('consent')}>
-        <Spec ids="F-B3" />
         <span className="e-row__icon"><Icon name="lock" size={24} /></span>
         <span className="e-row__body">
           <b>Your pattern, your say</b>
@@ -138,7 +136,6 @@ function Pattern({ back }: { back: () => void }) {
         <button onClick={back} aria-label="Back"><Icon name="left" size={22} /></button>
         <span>How you talk to Nan</span>
       </header>
-      <Spec ids="F-B1 F-B2" />
       <p className="e-muted">A copied voice gets your sound. It doesn’t get these. Tap what’s true for you.</p>
 
       <h2 className="e-q">What do you call her?</h2>
@@ -195,7 +192,6 @@ function Footprint({ back }: { back: () => void }) {
         <button onClick={back} aria-label="Back"><Icon name="left" size={22} /></button>
         <span>Your voice online</span>
       </header>
-      <Spec ids="F-E3" />
       <p className="e-lede">Three seconds of your voice is enough to copy it. You don’t have to stop posting — just keep the family stuff out.</p>
       <ul className="e-sources">
         <li><b>TikTok</b><span>41 public videos with your voice</span></li>
@@ -229,7 +225,6 @@ function ConsentPage({ back }: { back: () => void }) {
         <button onClick={back} aria-label="Back"><Icon name="left" size={22} /></button>
         <span>Your pattern, your say</span>
       </header>
-      <Spec ids="F-B3" />
       <section className="e-card e-card--line">
         <h2>What’s kept</h2>
         <ul className="e-list">

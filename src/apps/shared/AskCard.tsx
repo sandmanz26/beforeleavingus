@@ -1,8 +1,8 @@
 import { MEMBERS, type MemberId } from '../../data/family'
-import { Btn, Spec, Stamp } from '../../components/bits'
+import { Btn, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { mmss } from '../../components/Kettle'
-import { elapsed, nameFor, useWorld } from '../../store/world'
+import { elapsed, nameFor, telHref, useWorld } from '../../store/world'
 import type { Incident, Reply } from '../../store/types'
 import { factsFor } from '../margaret/facts'
 
@@ -21,7 +21,6 @@ export function AskCard({ me, inc }: { me: MemberId; inc: Incident }) {
 
   return (
     <section className="ask" aria-live="assertive">
-      <Spec ids={isMe ? 'F-C3' : 'F-A1 F-C5'} />
       <p className="ask__eyebrow">
         <span className="ask__badge">{inc.practice ? 'Practice' : 'Now'}</span>
         {mum}’s KinVoice · {elapsed(inc.startedAt, w.now)} ago
@@ -65,7 +64,7 @@ export function AskCard({ me, inc }: { me: MemberId; inc: Incident }) {
             <Btn tone="ink" big onClick={() => reply('knows-not')}>
               I know where {claimed?.name ?? 'they are'}{claimed ? ' is' : ''} right now
             </Btn>
-            <Btn tone="paper" icon="handset" onClick={() => reply('calling')}>I’ll ring {mum} now</Btn>
+            <Btn tone="paper" icon="handset" href={telHref(MEMBERS.margaret.phone)} onClick={() => reply('calling')}>I’ll ring {mum} now</Btn>
             <Btn tone="ghost" onClick={() => reply('unsure')}>I don’t know — ask the next person</Btn>
           </>
         )}
@@ -84,7 +83,7 @@ export function AnsweredCard({ me, inc }: { me: MemberId; inc: Incident }) {
     'not-me': `${mum} now sees: “${MEMBERS[me].name} answered: That’s not me.”`,
     'yes-me': `${mum} now sees: “${MEMBERS[me].name} answered: Yes, it’s me.” The pause has ended${me === 'david' ? '.' : ' and David has been asked to help you.'}`,
     'knows-not': `${mum} now sees: “${MEMBERS[me].name} answered: I know where ${inc.claimed && inc.claimed !== 'other' ? MEMBERS[inc.claimed].name : 'they are'} is right now.” ${inc.claimed && inc.claimed !== 'other' ? MEMBERS[inc.claimed].name : 'They'} is still being asked.`,
-    calling: `Ringing ${mum} now. ${mum} sees “${MEMBERS[me].name} is ringing you” and can hang up on the caller to answer.`,
+    calling: `${mum} sees “${MEMBERS[me].name} is ringing you now”. Ring ${MEMBERS.margaret.phone} if your phone didn’t open the call.`,
     unsure: 'Thanks. The next person in the phone tree is being asked.',
   }
   if (!mine?.reply) return null
@@ -100,13 +99,12 @@ export function AnsweredCard({ me, inc }: { me: MemberId; inc: Incident }) {
 // After the named person says “Yes, it’s me”: tell the circle keeper to act
 // (roast #7 — we promised Margaret that David would help).
 export function HandoffCard({ inc }: { inc: Incident }) {
-  const { w, dispatch } = useWorld()
+  const { w } = useWorld()
   const o = inc.outcome!
   const who = MEMBERS[o.by]
   const facts = factsFor(inc).filter((f) => f.tone === 'flag')
   return (
     <section className="ask ask--handoff" style={{ ['--who' as string]: who.color }}>
-      <Spec ids="F-A1 F-C3" />
       <p className="ask__eyebrow">
         <span className="ask__badge ask__badge--ink">Hand-off</span>
         {elapsed(o.at, w.now)} ago
@@ -121,8 +119,8 @@ export function HandoffCard({ inc }: { inc: Incident }) {
         </ul>
       )}
       <div className="ask__actions">
-        <Btn tone="ink" big icon="handset" onClick={() => dispatch({ type: 'ring', from: 'david', to: o.by })}>Ring {who.name}</Btn>
-        <Btn tone="paper" icon="handset" onClick={() => dispatch({ type: 'ring', from: 'david', to: 'margaret' })}>Ring Mum</Btn>
+        <Btn tone="ink" big icon="handset" href={telHref(who.phone)}>Ring {who.name}</Btn>
+        <Btn tone="paper" icon="handset" href={telHref(MEMBERS.margaret.phone)}>Ring Mum</Btn>
       </div>
     </section>
   )

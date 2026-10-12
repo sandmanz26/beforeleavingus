@@ -1,6 +1,6 @@
-import { Spec } from '../../components/bits'
 import { Icon } from '../../components/Icon'
-import { useWorld } from '../../store/world'
+import { MeButton } from '../../shell/Shell'
+import { quietCount, useWorld } from '../../store/world'
 import type { LogEntry } from '../../store/types'
 
 const ICON: Record<LogEntry['kind'], string> = {
@@ -23,12 +23,12 @@ export function Log() {
           <p className="d-eyebrow">Everything, in order</p>
           <h1 className="d-title">Log</h1>
         </div>
+        <MeButton />
       </header>
       <section className="d-calm">
-        <Spec ids="F-A2" />
         <Icon name="quiet" size={28} />
         <div>
-          <h2>{w.quietToday} calls screened quietly today</h2>
+          <h2>{quietCount(w)} calls screened quietly today</h2>
           <p>Sales calls and robocalls. Nobody was alerted — that’s on purpose. Alerts only happen when someone claims to be family.</p>
         </div>
       </section>

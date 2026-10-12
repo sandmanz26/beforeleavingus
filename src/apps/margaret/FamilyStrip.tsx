@@ -1,5 +1,5 @@
 import { MEMBERS } from '../../data/family'
-import { Dot, Spec, Stamp } from '../../components/bits'
+import { Dot, Stamp } from '../../components/bits'
 import { elapsed, useWorld } from '../../store/world'
 import type { Incident } from '../../store/types'
 
@@ -15,7 +15,6 @@ export function FamilyStrip({ inc }: { inc: Incident }) {
     w.now - lastSent >= w.settings.escalateAfterSec * 1000
   return (
     <section className="m-strip" aria-live="polite">
-      <Spec ids="F-C3 F-C5" />
       <h2 className="m-strip__title">Your family</h2>
       <ul>
         {inc.asks.map((a) => {

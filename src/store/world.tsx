@@ -1,58 +1,73 @@
-import { createContext, useContext, useEffect, useReducer, type Dispatch, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useReducer, useRef, type Dispatch, type ReactNode } from 'react'
 import { PROFILES, QUESTIONS, type Consent, type MemberId, type Profile, type Question } from '../data/family'
 import { MESSAGES } from '../data/messages'
-import { SCENARIOS } from '../data/scenarios'
-import type { Away, Incident, LogEntry, PayMethod, QResult, Reply, Settings, World } from './types'
+import type { Away, Incident, LogEntry, PayMethod, QResult, RecentCall, Reply, Settings, World } from './types'
 
-// Simulated clock starts Tuesday 13 Oct 2026, 10:58:40 — S-01 happens “Tuesday, 11:00”.
-const START = new Date(2026, 9, 13, 10, 58, 40).getTime()
-const SPAM_NUMBERS = ['(202) 555-0190', '(800) 555-0131', '(202) 555-0108', '(888) 555-0172', '(202) 555-0115']
+// The family's shared state. In production this lives on a server and each
+// person's phone sees their slice of it. Here it lives in this browser
+// (localStorage), so every profile on this device shares one family.
+const KEY = 'kinvoice.family.v3'
+const VERSION = 3
 
 const BASE_LOG: LogEntry[] = [
-  { id: 'l1', at: 'Mon 12 Oct', kind: 'quiet', title: '4 calls screened quietly', detail: 'Sales and robocalls. Mum wasn’t interrupted.' },
-  { id: 'l2', at: 'Sun 11 Oct', kind: 'practice', title: 'Practice run with Mum', detail: 'She found the help tab in 4 seconds and used the car question.' },
-  { id: 'l3', at: 'Fri 18 Sep', kind: 'message', title: 'Voice note checked: “Emma”', detail: 'Words matched how Emma talks to Nan. Nothing asked for money.' },
-  { id: 'l4', at: 'Mon 14 Sep', kind: 'consent', title: 'Emma and David agreed to pattern profiles', detail: 'Built on their own phones. Voices not kept.' },
-  { id: 'l5', at: 'Mon 14 Sep', kind: 'setup', title: 'Circle set up at Mum’s kitchen table', detail: '3 family questions written together. 52 minutes.' },
+  { id: 'l1', at: 'Yesterday', kind: 'quiet', title: '4 calls screened quietly', detail: 'Sales and robocalls. Mum wasn’t interrupted.' },
+  { id: 'l2', at: 'Sunday', kind: 'practice', title: 'Practice run with Mum', detail: 'She found the yellow button in 4 seconds and used the car question.' },
+  { id: 'l3', at: '3 weeks ago', kind: 'message', title: 'Voice note checked: “Emma”', detail: 'Words matched how Emma talks to Nan. Nothing asked for money.' },
+  { id: 'l4', at: '4 weeks ago', kind: 'consent', title: 'Emma and David agreed to pattern profiles', detail: 'Built on their own phones. Voices not kept.' },
+  { id: 'l5', at: '4 weeks ago', kind: 'setup', title: 'Circle set up at Mum’s kitchen table', detail: '3 family questions written together. 52 minutes.' },
 ]
 
-export function baseWorld(speed = 10, session = 0): World {
+const hm = (minsAgo: number) => new Date(Date.now() - minsAgo * 60_000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+
+function baseCalls(): RecentCall[] {
+  return [
+    { id: 'c1', number: '(202) 555-0199', kind: 'unknown', at: hm(4) },
+    { id: 'c2', number: '(800) 555-0131', kind: 'sales', at: hm(52) },
+    { id: 'c3', number: '(202) 555-0108', kind: 'sales', at: hm(75) },
+    { id: 'c4', number: '(202) 555-0177', savedAs: 'emma', kind: 'family', at: hm(110) },
+    { id: 'c5', number: '(888) 555-0172', kind: 'sales', at: hm(140) },
+    { id: 'c6', number: '(202) 555-0142', savedAs: 'david', kind: 'family', at: 'Yesterday' },
+  ]
+}
+
+export function baseWorld(): World {
   return {
-    session,
-    now: START,
-    speed,
-    scenarioId: null,
+    version: VERSION,
+    now: Date.now(),
     profiles: structuredClone(PROFILES),
     questions: structuredClone(QUESTIONS),
     order: ['david', 'emma', 'rob'],
     away: {},
-    busy: {},
-    autoReplies: [],
     settings: { pauseMinutes: 10, escalateAfterSec: 45, weeklySummary: true },
-    call: null,
-    familyCall: null,
-    queue: [],
+    calls: baseCalls(),
     incident: null,
     pastIncidents: [],
     messages: structuredClone(MESSAGES),
-    freshMessage: null,
-    quietToday: 3,
+    freshMessage: 'm-newnumber',
     log: BASE_LOG,
     drill: 'none',
-    pastLoss: false,
     disclosedTo: null,
     robNudged: false,
-    seenBy: {},
   }
 }
 
+function loadWorld(): World {
+  try {
+    const raw = localStorage.getItem(KEY)
+    if (raw) {
+      const w = JSON.parse(raw) as World
+      if (w.version === VERSION) return { ...w, now: Date.now() }
+    }
+  } catch {
+    /* storage blocked or corrupt — start fresh */
+  }
+  return baseWorld()
+}
+
 export type Action =
-  | { type: 'tick'; dt: number }
-  | { type: 'speed'; speed: number }
-  | { type: 'load'; id: string | null }
-  | { type: 'call-answer' }
-  | { type: 'call-decline' }
-  | { type: 'help' }
+  | { type: 'tick' }
+  | { type: 'reset' }
+  | { type: 'help'; callId?: string }
   | { type: 'claim'; who: MemberId | 'other' }
   | { type: 'question'; result: QResult }
   | { type: 'want'; v: PayMethod | 'none' }
@@ -72,13 +87,7 @@ export type Action =
   | { type: 'order'; order: MemberId[] }
   | { type: 'settings'; patch: Partial<Settings> }
   | { type: 'nudge-rob' }
-  | { type: 'pick-up'; member: MemberId }
-  | { type: 'seen'; member: MemberId; id: string }
   | { type: 'disclose'; member: MemberId | null }
-  | { type: 'ring'; from: MemberId; to: MemberId }
-  | { type: 'ring-answer' }
-  | { type: 'ring-end' }
-  | { type: 'hangup-ring'; to: MemberId }
 
 let uid = 0
 const nextId = (p: string) => `${p}-${Date.now().toString(36)}-${uid++}`
@@ -129,22 +138,15 @@ function applyReply(w: World, member: MemberId, reply: Reply) {
     inc.secondhand ??= { by: member, at: w.now }
   } else if (reply === 'calling') {
     inc.calling = member
-    ring(w, member, 'margaret')
   } else if (reply === 'unsure') {
     askNext(w, inc)
   }
-}
-
-function ring(w: World, from: MemberId, to: MemberId) {
-  if (w.familyCall && w.familyCall.state !== 'missed') return
-  w.familyCall = { from, to, state: 'ringing', startedAt: w.now }
 }
 
 function closeIncident(w: World, how: 'hung-up' | 'done') {
   const inc = w.incident
   if (!inc || inc.closed) return
   inc.closed = { how, at: w.now }
-  if (w.call && (w.call.state === 'active' || w.call.state === 'ringing')) w.call = null
   w.log = [logFor(w, inc), ...w.log]
   if (inc.practice) {
     w.drill = 'done'
@@ -182,9 +184,7 @@ function buildTree(w: World, claimed: MemberId | 'other') {
     : [claimed, ...w.order.filter((m) => m !== claimed)]
 }
 
-function clock(now: number) {
-  return new Date(now).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-}
+export const clock = (now: number) => new Date(now).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 function logFor(w: World, inc: Incident): LogEntry {
   const who = inc.claimed && inc.claimed !== 'other' ? cap(inc.claimed) : 'an official'
@@ -211,96 +211,42 @@ export const METHOD_WORD: Record<PayMethod, string> = {
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
 
 function reducer(state: World, action: Action): World {
+  if (action.type === 'reset') return baseWorld()
   const w: World = structuredClone(state)
+  w.now = Date.now()
   switch (action.type) {
     case 'tick': {
-      w.now += action.dt * w.speed
-      // scheduled events
-      const due = w.queue.filter((q) => q.at <= w.now)
-      w.queue = w.queue.filter((q) => q.at > w.now)
-      for (const ev of due) {
-        const sc = SCENARIOS.find((s) => s.id === w.scenarioId)
-        if (ev.type === 'ring' && sc?.call) {
-          w.call = { state: 'ringing', number: sc.call.number, shownAs: sc.call.shownAs, saved: !!sc.call.shownAs, startedAt: w.now }
-        }
-        if (ev.type === 'spam') {
-          w.call = { state: 'ringing', number: ev.payload ?? 'Unknown', saved: false, spam: true, startedAt: w.now }
-        }
-        if (ev.type === 'spam-end' && w.call?.spam) {
-          w.call = null
-          w.quietToday += 1
-        }
-      }
       const inc = w.incident
       if (inc && !inc.closed && !inc.outcome && inc.claimed) {
-        // phone tree: no answer in N seconds → ask the next person.
+        // Phone tree: no answer in N seconds → ask the next person.
         // Stops once a relative has answered; the named person is still asked.
         const lastSent = Math.max(...inc.asks.map((a) => a.sentAt))
         const pending = inc.asks.some((a) => a.state === 'asking')
         if (!inc.secondhand && (!pending || w.now - lastSent >= w.settings.escalateAfterSec * 1000)) {
           if (inc.asks.length < inc.tree.length) askNext(w, inc)
         }
-        for (const a of inc.asks) {
-          if (a.state !== 'asking') continue
-          const rule = inc.practice
-            ? a.member === inc.claimed ? { afterSec: 20, reply: 'not-me' as Reply } : undefined
-            : w.autoReplies.find((r) => r.member === a.member)
-          if (rule && w.now - a.sentAt >= rule.afterSec * 1000) applyReply(w, a.member, rule.reply)
+        // In a practice run the family isn't disturbed: the answer is played back for her.
+        if (inc.practice) {
+          const a = inc.asks.find((x) => x.member === inc.claimed && x.state === 'asking')
+          if (a && w.now - a.sentAt >= 8000) applyReply(w, a.member, 'not-me')
         }
       }
-      // family calls: an unanswered ring gives up after 25 s; a face-down phone never answers
-      const fc = w.familyCall
-      if (fc?.state === 'ringing' && w.now - fc.startedAt > 25_000) fc.state = 'missed'
-      if (fc?.state === 'active' && w.now - fc.startedAt > 90_000) w.familyCall = null
       return w
     }
-    case 'speed':
-      w.speed = action.speed
-      return w
-    case 'load': {
-      const fresh = baseWorld(state.speed, state.session + 1)
-      const sc = SCENARIOS.find((s) => s.id === action.id)
-      fresh.scenarioId = action.id
-      if (!sc) return fresh
-      const sec = (n: number) => n * 1000 * fresh.speed
-      if (sc.call) fresh.queue.push({ at: fresh.now + sec(sc.call.ringAfterSec), type: 'ring' })
-      if (sc.freshMessage) {
-        fresh.freshMessage = sc.freshMessage
-      }
-      if (sc.away) fresh.away[sc.away.member] = { label: sc.away.label, until: sc.away.until }
-      for (const b of sc.busy ?? []) fresh.busy[b.member] = b.label
-      fresh.autoReplies = sc.autoReplies ?? []
-      if (sc.spamCalls) {
-        for (let i = 0; i < sc.spamCalls; i++) {
-          const t = fresh.now + sec(1.5 + i * 4)
-          fresh.queue.push({ at: t, type: 'spam', payload: SPAM_NUMBERS[i % SPAM_NUMBERS.length] })
-          fresh.queue.push({ at: t + sec(2.6), type: 'spam-end' })
-        }
-      }
-      fresh.pastLoss = !!sc.pastLoss
-      return fresh
-    }
-    case 'call-answer':
-      if (w.call) w.call.state = 'active'
-      return w
-    case 'call-decline':
-      w.call = null
-      return w
     case 'help': {
       if (w.incident && !w.incident.closed && w.incident.kind === 'call') return w
       if (w.incident) w.pastIncidents.unshift(w.incident)
-      const c = w.call && w.call.state === 'active' ? w.call : null
+      const c = w.calls.find((x) => x.id === action.callId)
       w.incident = newIncident(w, 'call', {
         callerNumber: c?.number,
-        callerShownAs: c?.shownAs,
-        callerSaved: !!c?.saved,
+        callerShownAs: c?.savedAs,
+        callerSaved: !!c?.savedAs,
       })
       return w
     }
-    case 'practice-start': {
+    case 'practice-start':
       w.incident = newIncident(w, 'call', { practice: true })
       return w
-    }
     case 'claim': {
       const inc = w.incident
       if (!inc) return w
@@ -323,7 +269,7 @@ function reducer(state: World, action: Action): World {
     }
     case 'back': {
       // Undo the last answer. Going back past “who” withdraws every request
-      // that was sent, so a mis-tap never leaves the wrong person pinged.
+      // that was sent, so a mis-tap never leaves the wrong person asked.
       const inc = w.incident
       if (!inc || inc.closed || inc.outcome) return w
       if (inc.money !== null) {
@@ -344,49 +290,19 @@ function reducer(state: World, action: Action): World {
     case 'reply':
       applyReply(w, action.member, action.reply)
       return w
-    case 'pick-up':
-      delete w.busy[action.member]
-      return w
     case 'close':
       closeIncident(w, action.how)
       return w
-    case 'hangup-ring':
-      closeIncident(w, 'hung-up')
-      w.call = null
-      if (w.familyCall?.state === 'missed') w.familyCall = null
-      ring(w, 'margaret', action.to)
-      return w
-    case 'ring':
-      if (w.familyCall?.state === 'missed') w.familyCall = null
-      ring(w, action.from, action.to)
-      return w
-    case 'ring-answer': {
-      const fc = w.familyCall
-      if (!fc || fc.state !== 'ringing') return w
-      // Margaret answering family while a stranger is on the line: hang up on the stranger.
-      if (fc.to === 'margaret' && w.call) {
-        closeIncident(w, 'hung-up')
-        w.call = null
-      }
-      fc.state = 'active'
-      fc.startedAt = w.now
-      return w
-    }
-    case 'ring-end':
-      w.familyCall = null
-      return w
     case 'clear-incident':
       if (w.incident) {
-        if (!w.incident.closed) {
-          w.incident.closed = { how: 'done', at: w.now }
-          w.log = [logFor(w, w.incident), ...w.log]
-        }
+        closeIncident(w, 'done')
         w.pastIncidents.unshift(w.incident)
         w.incident = null
       }
       return w
     case 'message-ask': {
       if (w.incident && !w.incident.closed) return w
+      if (w.incident) w.pastIncidents.unshift(w.incident)
       const msg = w.messages.find((m) => m.id === action.messageId)
       if (!msg) return w
       const inc = newIncident(w, 'message', { messageId: msg.id, claimed: msg.claims, callerNumber: msg.from, callerSaved: msg.fromSaved })
@@ -441,25 +357,38 @@ function reducer(state: World, action: Action): World {
         w.log = [{ id: nextId('log'), at: `Today ${clock(w.now)}`, kind: 'attempt', title: `Mum chose to tell ${cap(action.member)} about money she lost`, detail: 'She asked for help. Read “How to talk about it” before you ring.' }, ...w.log]
       }
       return w
-    case 'seen':
-      w.seenBy[action.member] = [...(w.seenBy[action.member] ?? []), action.id]
-      return w
   }
 }
 
 const Ctx = createContext<{ w: World; dispatch: Dispatch<Action> } | null>(null)
 
 export function WorldProvider({ children }: { children: ReactNode }) {
-  const [w, dispatch] = useReducer(reducer, undefined, () => baseWorld())
+  const [w, dispatch] = useReducer(reducer, undefined, loadWorld)
+
   useEffect(() => {
-    let last = performance.now()
-    const t = setInterval(() => {
-      const n = performance.now()
-      dispatch({ type: 'tick', dt: n - last })
-      last = n
-    }, 250)
+    const t = setInterval(() => dispatch({ type: 'tick' }), 500)
     return () => clearInterval(t)
   }, [])
+
+  // Save once a second (ticks change `now` constantly) and when the page hides.
+  const latest = useRef(w)
+  latest.current = w
+  useEffect(() => {
+    const save = () => {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(latest.current))
+      } catch {
+        /* storage full or blocked — the app still works for this visit */
+      }
+    }
+    const t = setInterval(save, 1000)
+    window.addEventListener('pagehide', save)
+    return () => {
+      clearInterval(t)
+      window.removeEventListener('pagehide', save)
+    }
+  }, [])
+
   return <Ctx.Provider value={{ w, dispatch }}>{children}</Ctx.Provider>
 }
 
@@ -475,4 +404,8 @@ export function nameFor(w: World, by: MemberId) {
   return w.profiles[by].callsHer[0] ?? (by === 'emma' ? 'Nan' : 'Mum')
 }
 
+export const quietCount = (w: World) => w.calls.filter((c) => c.kind === 'sales').length
+
 export const activeIncident = (w: World) => (w.incident && !w.incident.closed ? w.incident : null)
+
+export const telHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, '')}`

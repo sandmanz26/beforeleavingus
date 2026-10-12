@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { BANK, MEMBERS, type MemberId } from '../../data/family'
-import { Btn, Spec, Stamp } from '../../components/bits'
+import { Btn, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
-import { useWorld } from '../../store/world'
+import { telHref, useWorld } from '../../store/world'
 import { BackBar } from './Margaret'
 
 // F-F1: shame-free recovery (P-14, S-05, J6). Her money, her choice of who
@@ -11,13 +11,11 @@ import { BackBar } from './Margaret'
 export function Happened({ onBack }: { onBack: () => void }) {
   const { w, dispatch } = useWorld()
   const [step, setStep] = useState(0)
-  const [ringing, setRinging] = useState(false)
 
   if (step === 0)
     return (
       <div className="m-page m-soft">
         <BackBar onBack={onBack} title="" />
-        <Spec ids="F-F1" />
         <Icon name="heart" size={52} className="m-closing__icon" />
         <h1 className="m-display m-display--xl">You’re not in trouble.</h1>
         <p className="m-body">The people who do this are professional criminals. Being tricked is not your fault — it happens to careful, clever people every day.</p>
@@ -39,14 +37,14 @@ export function Happened({ onBack }: { onBack: () => void }) {
             {BANK.line} · {BANK.note}
           </span>
         </div>
-        <Btn tone="ink" big icon="handset" onClick={() => setRinging(true)}>
-          {ringing ? 'Ringing the bank…' : `Ring ${BANK.name}`}
+        <Btn tone="ink" big icon="handset" href={telHref(BANK.line)}>
+          Ring {BANK.name}
         </Btn>
         <p className="m-label">Say this</p>
         <div className="m-card m-card--script">
           <p className="m-card__q">“I think I’ve been tricked into sending money. Please stop the payment and freeze my card.”</p>
         </div>
-        {w.pastLoss && <p className="m-body m-muted">Paid with gift cards? Ring the number on the back of each card as well.</p>}
+        <p className="m-body m-muted">Paid with gift cards? Ring the number on the back of each card as well.</p>
         <Btn tone="paper" big iconRight="right" onClick={() => setStep(2)}>I’ve rung them</Btn>
       </div>
     )

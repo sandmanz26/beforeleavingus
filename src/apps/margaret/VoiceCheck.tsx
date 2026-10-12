@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MEMBERS } from '../../data/family'
-import { Btn, Spec, Stamp } from '../../components/bits'
+import { Btn, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { checkWords } from '../../lib/patternCheck'
 import { useWorld } from '../../store/world'
@@ -76,7 +76,6 @@ function MessageDetail({ msg, onBack }: { msg: VoiceMessage; onBack: () => void 
     return (
       <div className="m-crisis">
         <section className="m-outcome" style={{ ['--who' as string]: by.color }}>
-          <Spec ids="F-C3" />
           <Stamp id={inc.outcome.by} size={96} />
           <h1 className="m-outcome__head">{no ? `${by.name} answered: “I didn’t send that.”` : `${by.name} answered: “Yes, that was me.”`}</h1>
           <p className="m-body">Answered on {by.name}’s own phone, just now.</p>
@@ -94,7 +93,6 @@ function MessageDetail({ msg, onBack }: { msg: VoiceMessage; onBack: () => void 
       <div className="m-page">
         <BackBar onBack={onBack} title="Voice message" />
         <section className="m-result">
-          <Spec ids="F-D1 F-B1" />
           <p className="m-from">
             {msg.fromSaved ? <>From <b>{msg.from}</b></> : <>From <b>{msg.from}</b> — not saved in your phone. It says it’s {claimed.name}.</>}
           </p>

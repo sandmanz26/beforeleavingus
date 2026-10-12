@@ -1,43 +1,41 @@
 import { useState } from 'react'
-import { Btn, Spec, Stamp } from '../../components/bits'
+import { Btn, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { useWorld } from '../../store/world'
+import { MeButton } from '../../shell/Shell'
 import { AnsweredCard, AskCard } from '../shared/AskCard'
-import { FamilyCallLayer } from '../../components/FamilyCall'
 
-// Rob: backup verifier who barely opens the app (persona D). His whole
-// experience is notifications — so it's a lock screen.
+// Rob: the backup who rarely opens the app (persona D). It's quiet until
+// someone needs him — then it's one card with one-tap answers.
 export function RobApp() {
   const { w, dispatch } = useWorld()
   const inc = w.incident
   const mine = inc?.asks.find((a) => a.member === 'rob')
   const p = w.profiles.rob
   const [pick, setPick] = useState<string | null>(null)
-  const time = new Date(w.now).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  const date = new Date(w.now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
 
   if (inc && !inc.closed && mine?.state === 'asking')
     return (
       <div className="r-app r-app--ask">
-        <FamilyCallLayer me="rob" />
+        <div className="ask-top"><MeButton /></div>
         <AskCard me="rob" inc={inc} />
       </div>
     )
 
+  const nudged = w.robNudged && p.consent === 'waiting'
   return (
     <div className="r-app">
-      <FamilyCallLayer me="rob" />
-      <div className="r-lock">
-        <p className="r-lock__date">{date}</p>
-        <p className="r-lock__time">{time}</p>
+      <div className="e-top">
+        <p className="e-eyebrow">Mum’s circle</p>
+        <MeButton />
       </div>
+      <h1 className="r-title">Hello, Rob.</h1>
 
       {inc && mine?.state === 'answered' && <AnsweredCard me="rob" inc={inc} />}
 
-      {w.robNudged && p.consent === 'waiting' && (
+      {nudged && (
         <section className="r-note">
-          <Spec ids="F-B3 F-B2" />
-          <p className="r-note__app">KinVoice · David</p>
+          <p className="r-note__app">From David</p>
           <b>Add how you talk to Mum?</b>
           <p>One question. Nothing is kept until you agree, and your voice is never copied.</p>
           <p className="r-note__q">What do you call her?</p>
@@ -60,15 +58,20 @@ export function RobApp() {
         </section>
       )}
 
-      {!(inc && mine) && !(w.robNudged && p.consent === 'waiting') && (
-        <section className="r-note r-note--quiet">
-          <Stamp id="rob" size={32} />
-          <p>
-            Nothing needs you. You’re number {w.order.indexOf('rob') + 1} in Mum’s phone tree.
-            {p.consent === 'agreed' && <><br /><Icon name="tick" size={14} stroke={3} /> Your pattern is set.</>}
-          </p>
+      {!(inc && mine) && !nudged && (
+        <section className="r-quiet">
+          <Stamp id="rob" size={44} />
+          <div>
+            <b>Nothing needs you.</b>
+            <p>You’re number {w.order.indexOf('rob') + 1} in Mum’s phone tree. If someone claims to be family and nobody ahead of you answers, you’ll be asked here.</p>
+          </div>
         </section>
       )}
+
+      <ul className="r-facts">
+        <li><Icon name={p.consent === 'agreed' ? 'tick' : 'clock'} size={20} /> {p.consent === 'agreed' ? `Your pattern is set: you call her “${p.callsHer[0]}”.` : 'Your pattern isn’t set up yet.'}</li>
+        <li><Icon name="lock" size={20} /> KinVoice never keeps or copies anyone’s voice.</li>
+      </ul>
     </div>
   )
 }

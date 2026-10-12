@@ -9,7 +9,7 @@ v1 commit: `KinVoice prototype v1` · v2 commit: `KinVoice prototype v2`.
 ## 🔥 Critical
 
 ### 1. The pause lies
-![v1 who screen](../public/roast/v1-who.jpg)
+![v1 who screen](roast/v1-who.jpg)
 
 v1 said: *“Nothing can be sent for ten minutes.”* KinVoice can't touch her bank, a gift-card till or a courier at the door. Telling an 80-year-old that the app is blocking payments is exactly the false reassurance PRD §1 forbids. She may start the transfer *because* “the app will stop it”.
 
@@ -21,7 +21,7 @@ v1 went who → question → money → method → secret → pause, all while a 
 **v2:** Who → family question → *“What are they asking for?”* (one screen, method included) → pause. Secrecy becomes a standing line on the pause screen: *“Whatever they said, you're allowed to tell family.”*
 
 ### 3. The most important button is below the fold
-![v1 pause](../public/roast/v1-pause.jpg)
+![v1 pause](roast/v1-pause.jpg)
 
 **Hang up** sat under a dial, a headline, a callout, the family list and the facts list. *They avoided it* needed a scroll. Someone who doesn't know there is more will never scroll to find it.
 
@@ -30,7 +30,7 @@ v1 went who → question → money → method → secret → pause, all while a 
 ## High
 
 ### 4. Three bars of chrome before the first word
-![v1 question](../public/roast/v1-question.jpg)
+![v1 question](roast/v1-question.jpg)
 
 The call bar, the yellow pause bar and the “Your family” box took about 190px before *Ask them this*. A status was sitting on top of the task.
 **v2:** One header holds the kettle timer and the live family line (*Asking Emma · 0:12*). The full family list appears only on the pause screen.
@@ -40,7 +40,7 @@ A shaky thumb taps Rob instead of Emma. Rob gets pinged, Emma never does, and th
 **v2:** Every step has **Back**. Changing who withdraws the wrong person's request and asks the right one.
 
 ### 6. A second-hand “no” was treated as gospel
-![v1 outcome](../public/roast/v1-outcome.jpg)
+![v1 outcome](roast/v1-outcome.jpg)
 
 David's *“I know where Emma is”* produced the same screen as Emma's own denial. If David is wrong (S-04: Emma really did crash), Margaret hangs up on a true emergency.
 **v2:** Only the named person's own answer is final. A relative's answer reads *“David thinks this isn't Emma”*, Emma keeps being asked, and a later *“Yes, it's me”* from Emma overrides it.
@@ -57,11 +57,11 @@ The family list said *“Is ringing you now”* and nothing rang. Worse, Margare
 
 | # | Burn | v2 fix |
 |---|---|---|
-| 9 | **Two yellow buttons, one job.** During a call, home showed the big button *and* a sticky tab on top of the tiles. ![](../public/roast/v1-incall.jpg) | On home the big button is the tab. The floating tab only appears on other screens. |
+| 9 | **Two yellow buttons, one job.** During a call, home showed the big button *and* a sticky tab on top of the tiles. ![](roast/v1-incall.jpg) | On home the big button is the tab. The floating tab only appears on other screens. |
 | 10 | **Stamps you can't stamp.** The family faces looked tappable and did nothing. | Tap a face to ring that person on their saved number. That builds the call-back habit every day. |
 | 11 | **Yellow means five things:** the help button, the pause, “waiting”, warnings and spec tags. | Yellow belongs to help and the pause only. Warnings get a red mark; spec tags become white luggage tags. |
-| 12 | **The voice check makes her work for the answer.** Two taps and a long scroll before *Ask David*. ![](../public/roast/v1-voice.jpg) | The comparison runs on open. The headline comes first, the transcript is folded, and the action is docked. |
-| 13 | **The banner sits on the card it announces.** ![](../public/roast/v1-banner.jpg) | The banner pushes content down and folds away after a few seconds. |
+| 12 | **The voice check makes her work for the answer.** Two taps and a long scroll before *Ask David*. ![](roast/v1-voice.jpg) | The comparison runs on open. The headline comes first, the transcript is folded, and the action is docked. |
+| 13 | **The banner sits on the card it announces.** ![](roast/v1-banner.jpg) | The banner pushes content down and folds away after a few seconds. |
 
 ## Low
 
@@ -69,7 +69,7 @@ The family list said *“Is ringing you now”* and nothing rang. Worse, Margare
 |---|---|---|
 | 14 | **“Well done, Margaret” is how you talk to a child.** It feeds P-14, the fear of being seen as no longer capable. | *“You checked first. That's what the family hoped you'd do.”* |
 | 15 | **The header kettle reads as a house.** | Redrawn with an arched handle and a spout. |
-| 16 | **The demo didn't fit a laptop.** Phones overlapped at 1440px, didn't reset between stories, and the mobile bar took two lines. ![](../public/roast/v1-stage.jpg) | Stories fold into a drawer below 1600px, phones size to the window, each story remounts every phone, and the mobile bar is one line. |
+| 16 | **The demo didn't fit a laptop.** Phones overlapped at 1440px, didn't reset between stories, and the mobile bar took two lines. ![](roast/v1-stage.jpg) | Stories fold into a drawer below 1600px, phones size to the window, each story remounts every phone, and the mobile bar is one line. |
 
 ---
 
@@ -86,3 +86,19 @@ The family list said *“Is ringing you now”* and nothing rang. Worse, Margare
 - If Emma's phone is gone (lost or smashed), only the family question can carry S-04.
 - None of this has been tested with real 80-year-olds. The PRD §17 assumptions stay hypotheses until a moderated study with 5–8 Margarets.
 - There's no text-size control yet; we rely on 21px base type and the phone's own settings.
+
+---
+
+# Round 2: v2 → v3 (the product)
+
+### The biggest miss: I built a showcase, not the product
+v2 was a stage. Four phones sat side by side, with a story picker, spec tags, a feature map and an in-app roast panel. That is a great artefact for a PM review, but it isn't KinVoice. Nobody's grandmother will ever open a screen with four phones on it. The brief asked for the product, built from the PRD.
+
+**v3:**
+- **One app, one person.** KinVoice opens on *“Who's using this phone?”*, and each family member gets their own full-screen app. All the PM and demo chrome (stage, stories, spec tags, feature map, roast panel) is out of the UI. The registry and the critique live in `docs/` and `src/data/prd.ts`.
+- **Real time, saved on the device.** There is no 10× demo clock. The phone tree waits 45 real seconds and the pause lasts 10 real minutes. The family state survives a reload, and *Reset sample data* starts over.
+- **No fake phone calls.** v2 drew pretend OS call screens. A web app can't answer, end or listen to calls (PRD §7), so v3 stops pretending:
+  - Margaret taps **“I've hung up”** when she has hung up.
+  - **“Ring David”** is a real `tel:` link that opens the dialler.
+  - The number note (F-C6) moved to a **Recent calls** screen, where an unknown number has a *Check this call* button and sales calls are folded away and counted (F-A2).
+- **Rob is a normal app**, not a pretend lock screen.

@@ -1,7 +1,7 @@
-# KinVoice: product spec for the prototype
+# KinVoice: product spec
 
 Source: *PRD KinVoice v2 — Verifikasi Pola Bicara Keluarga Melawan Penipuan Suara AI* (draft v2, discovery).
-This prototype is front-end only, with mock data. Every family member's phone runs off one shared, simulated “world” (`src/store/world.tsx`), so a tap on Emma's phone changes Margaret's screen.
+The app is front-end only, with mock data. Each family member picks their profile and gets their own KinVoice. Profiles share one family state, saved on the device (`src/store/world.tsx`), so a request Margaret starts is waiting on Emma's profile. In production that state would live on a server and each person would use their own phone.
 
 ## The thesis, as built
 1. **Scammers copy a voice, not a relationship.** The strongest signals are what the family knows (the family question, pet names) and who is present (the person answering on their own phone). Acoustic analysis is not one of them.
@@ -33,12 +33,12 @@ This prototype is front-end only, with mock data. Every family member's phone ru
 | **Rob**, 48 | Backup (D) | Has a lock screen only: answers as a backup verifier and gives consent when nudged. |
 
 ## Feature registry
-Every feature cites a PRD problem (P), attack stage (T) or scenario (S). In the app, open **Feature map**, or turn on **Spec tags** to see each feature where it lives.
+Every feature cites a PRD problem (P), attack stage (T) or scenario (S). The registry lives in `src/data/prd.ts`, and `npm run copy-guard` fails the build if a feature has no reference.
 
 | ID | Feature | Refs |
 |---|---|---|
 | F-A1 | Family alert: one tap to answer | P-13 P-12 · T-05 T-06 · S-01 S-06 |
-| F-A2 | Quiet filter: spam only counted | P-12 · T-04 · S-06 |
+| F-A2 | Quiet filter: sales calls folded away and counted | P-12 · T-04 · S-06 |
 | F-A3 | Afternoon setup checklist | P-09 P-08 · T-03 · S-03 |
 | F-A4 | Away status skips you in the tree | P-10 · T-05 · S-07 |
 | F-B1 | How you talk to her (names, hello, bye, never-says) | P-01 P-02 · T-03 · S-02 |
@@ -49,8 +49,8 @@ Every feature cites a PRD problem (P), attack stage (T) or scenario (S). In the 
 | F-C2 | Family question, with the answer to listen for | P-09 P-01 · T-05 · S-03 S-08 |
 | F-C3 | “Is this you?” on their own phone | P-01 P-05 P-13 · T-05 · S-01 S-04 S-08 |
 | F-C4 | Kettle pause (10 minutes; can be longer, never shorter) | P-04 P-11 P-06 · T-06 · S-01 S-04 |
-| F-C5 | Phone tree with 45-second escalation, and real family calls | P-10 P-13 · T-06 · S-07 |
-| F-C6 | Number note (a name on screen can be copied) | P-01 · T-04 · S-08 |
+| F-C5 | Phone tree with 45-second escalation; “Ring David” opens the dialler | P-10 P-13 · T-06 · S-07 |
+| F-C6 | Number note in Recent calls (a name on screen can be copied) | P-01 · T-04 · S-08 |
 | F-D1 | Voice-message word check | P-01 P-02 P-06 · T-04 · S-02 |
 | F-E1 | Two-minute stories | P-08 · T-01 · S-06 |
 | F-E2 | Monthly family practice | P-09 P-04 · T-05 · S-03 |
@@ -73,12 +73,12 @@ Three taps to the pause. A family member's answer interrupts any step.
 - **Palette (kitchen enamelware):** duck egg `#DCE8E4`, enamel `#FCFDFB`, rim navy `#14233D`, pillar-box red `#C42B1C` (hang up only), yolk `#F4B740` (help and pause only). Each family member has a colour: plum, teal, cornflower, umber.
 - **Type:** Caprasimo for calm display moments; Atkinson Hyperlegible Next for everything a person must read (designed by the Braille Institute for low vision); Atkinson Hyperlegible Mono for timers and numbers.
 - **Signature:** the kettle on a kitchen-timer dial (F-C4).
-- **Objects, not widgets:** family as postage stamps, questions as recipe cards, Rob's whole app as a lock screen, and pressable enamel slabs for buttons.
+- **Objects, not widgets:** family as postage stamps, questions as recipe cards, and pressable enamel slabs for buttons.
 - **Icons:** a bespoke 32-grid set drawn for household objects: kettle, handset, recipe card, doorstep, footprint.
 
 ## Hypotheses (PRD §17: unvalidated)
 - A pause that is only a promise still changes behaviour under pressure. Test with role-play.
 - Claimed members answer within 45 seconds often enough to matter. The escalation timing is a guess.
-- Older users find the yellow button mid-call. The prototype assumes an in-call overlay the OS may not allow.
+- Older users find the yellow button mid-call. On a real phone that needs a persistent notification or widget; a web app can't draw over a call.
 - Bank partnerships could turn the promise into a hard brake (PRD §2.3).
 - Word-level pattern checks catch “Mom vs Mum” style slips more often than they cry wolf. This needs real voice-note data and consent research.

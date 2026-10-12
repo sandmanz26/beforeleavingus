@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Btn, Spec } from '../../components/bits'
+import { Btn } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { BackBar } from './Margaret'
 
@@ -17,7 +17,6 @@ export function Stories({ onBack }: { onBack: () => void }) {
   return (
     <div className="m-page m-soft">
       <BackBar onBack={onBack} title={`${i + 1} of ${PAGES.length}`} />
-      <Spec ids="F-E1" />
       <div className="m-story">
         <Icon name={p.icon} size={64} stroke={2.2} />
         <h1 className="m-display m-display--xl">{p.head}</h1>

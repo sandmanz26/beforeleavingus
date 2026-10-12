@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { MEMBERS, type MemberId } from '../../data/family'
-import { Btn, Pill, Spec, Stamp } from '../../components/bits'
+import { Btn, Pill, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
+import { MeButton } from '../../shell/Shell'
 import { useWorld } from '../../store/world'
 
 // F-C2: family questions as recipe cards. The “stranger test” keeps
@@ -25,6 +26,7 @@ export function Questions() {
           <p className="d-eyebrow">Instead of a password</p>
           <h1 className="d-title">Family questions</h1>
         </div>
+        <MeButton />
       </header>
       <p className="d-muted">Mum never has to remember these. When someone asks for help, KinVoice shows her one the caller should know, and what answer to listen for.</p>
 
@@ -33,7 +35,6 @@ export function Questions() {
         const open = shown.includes(q.id)
         return (
           <article key={q.id} className={`d-recipe${pass ? '' : ' is-weak'}`}>
-            <Spec ids="F-C2" />
             <p className="d-recipe__q">{q.ask}</p>
             <button className="d-recipe__a" onClick={() => setShown(open ? shown.filter((x) => x !== q.id) : [...shown, q.id])}>
               <Icon name={open ? 'eyeoff' : 'eye'} size={20} />
@@ -72,7 +73,6 @@ function AddQuestion({ done }: { done: () => void }) {
 
   return (
     <section className="d-card d-form">
-      <Spec ids="F-C2 F-A3" />
       <h2>New question</h2>
       <label>
         Question Mum will ask

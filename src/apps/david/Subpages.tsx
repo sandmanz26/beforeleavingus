@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BANK, MEMBERS, type MemberId } from '../../data/family'
-import { Btn, Pill, Segmented, Spec, Toggle } from '../../components/bits'
+import { Btn, Pill, Segmented, Toggle } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { checkWords } from '../../lib/patternCheck'
 import { useWorld } from '../../store/world'
@@ -41,7 +41,6 @@ export function Setup({ back, goTab }: { back: () => void; goTab: (t: string) =>
   return (
     <div className="d-page">
       <SubHead back={back} eyebrow="About an hour, at the kitchen table" title="Afternoon setup" />
-      <Spec ids="F-A3" />
       <ol className="d-steps">
         {steps.map((s, i) => (
           <li key={s.title} className={s.done ? 'is-done' : ''}>
@@ -65,7 +64,6 @@ export function Settings({ back }: { back: () => void }) {
     <div className="d-page">
       <SubHead back={back} eyebrow="Mum’s circle" title="Settings" />
       <section className="d-card d-card--line">
-        <Spec ids="F-A1 F-A2" />
         <h2>When you hear from us</h2>
         <div className="d-setting">
           <span>
@@ -83,7 +81,6 @@ export function Settings({ back }: { back: () => void }) {
         </div>
       </section>
       <section className="d-card d-card--line">
-        <Spec ids="F-C4" />
         <h2>Kettle pause</h2>
         <p className="d-muted">Nothing can be sent while it runs. It ends early only when the person named answers on their own phone. It can be longer, never shorter.</p>
         <Segmented
@@ -94,7 +91,6 @@ export function Settings({ back }: { back: () => void }) {
         />
       </section>
       <section className="d-card d-card--line">
-        <Spec ids="F-F1" />
         <h2>Mum’s bank</h2>
         <div className="d-setting">
           <span>
@@ -120,7 +116,6 @@ export function TalkGuide({ back }: { back: () => void }) {
   return (
     <div className="d-page">
       <SubHead back={back} eyebrow="Takes a minute to read" title="How to talk about it" />
-      <Spec ids="F-F2" />
       <p className="d-lede">The biggest risk now isn’t the money. It’s Mum deciding never to tell you next time.</p>
       <ul className="d-talk">
         {TALK.map((t) => (
@@ -150,7 +145,6 @@ export function MessageCheck({ back }: { back: () => void }) {
   return (
     <div className="d-page">
       <SubHead back={back} eyebrow="Words only — never a verdict" title="Check a message" />
-      <Spec ids="F-D1 F-B1" />
       <section className="d-card d-form">
         <label>
           What the message said

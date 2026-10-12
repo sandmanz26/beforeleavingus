@@ -1,63 +1,33 @@
 import { useState } from 'react'
 import { MEMBERS, type MemberId } from '../../data/family'
-import { Btn, Spec, Stamp } from '../../components/bits'
+import { Btn, Stamp } from '../../components/bits'
 import { Icon, RingingIcon } from '../../components/Icon'
-import { FamilyCallLayer } from '../../components/FamilyCall'
-import { elapsed, useWorld } from '../../store/world'
+import { telHref, useWorld } from '../../store/world'
+import { MeButton } from '../../shell/Shell'
 import { CheckFlow } from './CheckFlow'
 import { Happened } from './Happened'
 import { Stories } from './Stories'
 import { VoiceCheck } from './VoiceCheck'
 
-type Screen = 'home' | 'voice' | 'happened' | 'stories'
+type Screen = 'home' | 'voice' | 'calls' | 'happened' | 'stories'
 
+// Margaret's KinVoice. Designed for 80, panicking, shaking hands:
+// 21px body, big targets, one decision per screen once something is wrong.
 export function MargaretApp() {
-  const { w, dispatch } = useWorld()
+  const { w } = useWorld()
   const [screen, setScreen] = useState<Screen>('home')
   const inc = w.incident
-  const call = w.call
-
-  if (call?.state === 'ringing') return <IncomingCall />
+  const home = () => setScreen('home')
 
   let body
   if (inc && inc.kind === 'call') body = <CheckFlow />
-  else if (screen === 'voice' || (inc?.kind === 'message' && inc.outcome)) body = <VoiceCheck onBack={() => setScreen('home')} />
-  else if (screen === 'happened') body = <Happened onBack={() => setScreen('home')} />
-  else if (screen === 'stories') body = <Stories onBack={() => setScreen('home')} />
+  else if (screen === 'voice' || (inc?.kind === 'message' && inc.outcome)) body = <VoiceCheck onBack={home} />
+  else if (screen === 'calls') body = <RecentCalls onBack={home} />
+  else if (screen === 'happened') body = <Happened onBack={home} />
+  else if (screen === 'stories') body = <Stories onBack={home} />
   else body = <Home go={setScreen} />
 
-  const callActive = call?.state === 'active'
-  const inCrisis = !!inc && inc.kind === 'call' && !inc.closed
-  return (
-    <div className="m-app">
-      <FamilyCallLayer me="margaret" suppressIncoming={inCrisis} />
-      {callActive && (
-        <div className="m-incall">
-          <Icon name="handset" size={18} />
-          <span className="m-incall__who">{call.shownAs ? MEMBERS[call.shownAs].name : call.number}</span>
-          <span className="m-incall__t">{elapsed(call.startedAt, w.now)}</span>
-          <button
-            className="m-incall__end"
-            onClick={() => (inc && !inc.closed ? dispatch({ type: 'close', how: 'hung-up' }) : dispatch({ type: 'call-decline' }))}
-          >
-            End
-          </button>
-        </div>
-      )}
-      {body}
-      {/* On home the big yellow button already is the tab (roast #9). */}
-      {callActive && (!inc || inc.kind !== 'call') && !(screen === 'home' && !inc) && (
-        <button className="m-helptab" onClick={() => dispatch({ type: 'help' })}>
-          <Spec ids="F-C1" place="tl" />
-          <RingingIcon size={30} />
-          <span>
-            <b>Asking for help or money?</b>
-            Tap here
-          </span>
-        </button>
-      )}
-    </div>
-  )
+  return <div className="m-app">{body}</div>
 }
 
 function greeting(now: number) {
@@ -69,23 +39,27 @@ function Home({ go }: { go: (s: Screen) => void }) {
   const { w, dispatch } = useWorld()
   const date = new Date(w.now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
   const family: MemberId[] = ['david', 'emma', 'rob']
+  const sales = w.calls.filter((c) => c.kind === 'sales').length
+  const unknown = w.calls.filter((c) => c.kind === 'unknown').length
   return (
     <div className="m-home">
-      <p className="m-date">{date}</p>
+      <div className="m-home__top">
+        <p className="m-date">{date}</p>
+        <MeButton />
+      </div>
       <h1 className="m-display m-display--xl">
         {greeting(w.now)},<br />Margaret.
       </h1>
 
       <section className="m-fam" aria-label="Ring your family">
-        <Spec ids="F-C5" />
         <ul>
           {family.map((id) => (
             <li key={id}>
-              <button onClick={() => dispatch({ type: 'ring', from: 'margaret', to: id })} aria-label={`Ring ${MEMBERS[id].name}`}>
+              <a href={telHref(MEMBERS[id].phone)} aria-label={`Ring ${MEMBERS[id].name}`}>
                 <Stamp id={id} size={52} />
                 <span>{MEMBERS[id].name}</span>
                 <i className="m-fam__ring"><Icon name="handset" size={14} stroke={3} /></i>
-              </button>
+              </a>
             </li>
           ))}
         </ul>
@@ -93,7 +67,6 @@ function Home({ go }: { go: (s: Screen) => void }) {
       </section>
 
       <button className="m-help" onClick={() => dispatch({ type: 'help' })}>
-        <Spec ids="F-C1" />
         <RingingIcon size={40} />
         <span className="m-help__text">
           <b>Someone’s asking for help or money</b>
@@ -103,38 +76,40 @@ function Home({ go }: { go: (s: Screen) => void }) {
 
       {w.drill === 'scheduled' && (
         <div className="m-drill">
-          <Spec ids="F-E2" />
           <p>
-            <b>David set up a practice.</b> Two minutes. Nothing goes outside the family.
+            <b>David set up a practice.</b> Two minutes. Nobody else is disturbed.
           </p>
           <Btn tone="ink" onClick={() => dispatch({ type: 'practice-start' })}>Start the practice</Btn>
         </div>
       )}
 
-      <button className="m-tile m-tile--wide" onClick={() => go('voice')}>
-        <Spec ids="F-D1" />
-        <Icon name="voicenote" size={34} />
-        <span>Check a voice message</span>
-        {w.freshMessage ? <em className="m-tile__new">1 new</em> : <Icon name="chevron" size={22} />}
-      </button>
+      <div className="m-tiles">
+        <button className="m-tile" onClick={() => go('calls')}>
+          <Icon name="handset" size={34} />
+          <span>Recent calls</span>
+          {unknown > 0 && <em className="m-tile__new">{unknown} unknown</em>}
+        </button>
+        <button className="m-tile" onClick={() => go('voice')}>
+          <Icon name="voicenote" size={34} />
+          <span>Voice messages</span>
+          {w.freshMessage && <em className="m-tile__new">1 new</em>}
+        </button>
+      </div>
 
       <p className="m-quiet">
-        <Spec ids="F-A2" place="inline" />
         <Icon name="quiet" size={22} />
-        {w.quietToday} calls today looked like sales calls. Nothing for you to do.
+        {sales} calls today looked like sales calls. Nothing for you to do.
       </p>
 
       <nav className="m-links">
         <button onClick={() => go('happened')}>
-          <Spec ids="F-F1" place="inline" />
           <Icon name="buoy" size={24} />
           Something already happened
           <Icon name="chevron" size={20} />
         </button>
         <button onClick={() => go('stories')}>
-          <Spec ids="F-E1" place="inline" />
           <Icon name="book" size={24} />
-          Why the family set this up
+          How KinVoice works
           <Icon name="chevron" size={20} />
         </button>
       </nav>
@@ -142,40 +117,60 @@ function Home({ go }: { go: (s: Screen) => void }) {
   )
 }
 
-function IncomingCall() {
+// F-C6 + F-A2: what came in, with a plain note on each unknown number.
+// Sales calls are folded away — counted, never announced.
+function RecentCalls({ onBack }: { onBack: () => void }) {
   const { w, dispatch } = useWorld()
-  const c = w.call!
-  const shown = c.shownAs ? MEMBERS[c.shownAs] : null
+  const [showSales, setShowSales] = useState(false)
+  const calls = w.calls.filter((c) => c.kind !== 'sales')
+  const sales = w.calls.filter((c) => c.kind === 'sales')
   return (
-    <div className="os-call">
-      <p className="os-call__label">{c.spam ? 'Incoming call' : 'Incoming call · mobile'}</p>
-      <p className="os-call__who">{shown ? shown.name : c.number}</p>
-      {shown && <p className="os-call__num">{c.number}</p>}
-      {!c.spam && (
-        <div className="os-note">
-          <Spec ids="F-C6" />
-          <p className="os-note__brand">KinVoice</p>
-          {shown ? (
-            <p>
-              The screen says “{shown.name}”. <b>Names on a screen can be copied</b>, so this doesn’t tell us who’s calling.
-            </p>
-          ) : (
-            <p>
-              <b>A number you haven’t saved.</b> If they ask for help or money, tap the yellow tab.
-            </p>
-          )}
-        </div>
+    <div className="m-page">
+      <BackBar onBack={onBack} title="Recent calls" />
+      <ul className="m-calls">
+        {calls.map((c) => (
+          <li key={c.id} className={`is-${c.kind}`}>
+            <div className="m-calls__row">
+              {c.savedAs ? <Stamp id={c.savedAs} size={40} /> : <span className="m-inbox__unknown"><Icon name="handset" size={24} /></span>}
+              <span className="m-calls__who">
+                <b>{c.savedAs ? MEMBERS[c.savedAs].name : c.number}</b>
+                <small>{c.at}</small>
+              </span>
+            </div>
+            {c.kind === 'unknown' && (
+              <>
+                <p className="m-calls__note">A number you haven’t saved. If they asked for help or money, check it with family.</p>
+                <Btn tone="yolk" icon="people" onClick={() => dispatch({ type: 'help', callId: c.id })}>Check this call</Btn>
+              </>
+            )}
+            {c.kind === 'family' && (
+              <button className="m-calls__also" onClick={() => dispatch({ type: 'help', callId: c.id })}>
+                Asked for money? Names on a screen can be copied — check it
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <button className="m-calls__sales" onClick={() => setShowSales(!showSales)} aria-expanded={showSales}>
+        <Icon name="quiet" size={24} />
+        <span>
+          <b>{sales.length} sales calls, screened quietly</b>
+          <small>Nothing for you to do.</small>
+        </span>
+        <Icon name={showSales ? 'up' : 'down'} size={20} />
+      </button>
+      {showSales && (
+        <ul className="m-calls m-calls--sales">
+          {sales.map((c) => (
+            <li key={c.id}>
+              <span className="m-calls__who">
+                <b>{c.number}</b>
+                <small>{c.at} · likely a sales call</small>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
-      <div className="os-call__actions">
-        <button className="os-btn os-btn--decline" onClick={() => dispatch({ type: 'call-decline' })} aria-label="Decline">
-          <Icon name="handset" size={34} style={{ transform: 'rotate(135deg)' }} />
-          <span>Decline</span>
-        </button>
-        <button className="os-btn os-btn--accept" onClick={() => dispatch({ type: 'call-answer' })} aria-label="Answer">
-          <Icon name="handset" size={34} />
-          <span>Answer</span>
-        </button>
-      </div>
     </div>
   )
 }

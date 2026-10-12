@@ -1,13 +1,10 @@
 import { WorldProvider } from './store/world'
-import { Stage } from './stage/Stage'
-import { UIProvider } from './stage/ui'
+import { Shell } from './shell/Shell'
 
 export function App() {
   return (
     <WorldProvider>
-      <UIProvider>
-        <Stage />
-      </UIProvider>
+      <Shell />
     </WorldProvider>
   )
 }

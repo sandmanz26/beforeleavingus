@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { MEMBERS } from '../../data/family'
-import { Btn, Pill, Segmented, Spec, Stamp } from '../../components/bits'
+import { Btn, Pill, Segmented, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
+import { MeButton } from '../../shell/Shell'
 import { useWorld } from '../../store/world'
 
 // F-C5 phone tree order, F-A4 away status, F-B1/B3/B4 pattern summaries.
@@ -23,10 +24,10 @@ export function Circle() {
           <p className="d-eyebrow">4 people</p>
           <h1 className="d-title">The circle</h1>
         </div>
+        <MeButton />
       </header>
 
       <section className="d-card d-card--line">
-        <Spec ids="F-C5 F-A4" />
         <div className="d-protected">
           <Stamp id="margaret" size={48} />
           <div>
@@ -73,7 +74,6 @@ export function Circle() {
         const stale = p.consent === 'agreed' && p.updatedDaysAgo > 90
         return (
           <section key={m} className="d-card d-pattern">
-            <Spec ids={stale ? 'F-B1 F-B4' : 'F-B1 F-B3'} />
             <header>
               <Stamp id={m} size={34} />
               <b>{MEMBERS[m].name}</b>

@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
 import { MEMBERS, type MemberId } from '../../data/family'
-import { Btn, Dot, Spec, Stamp } from '../../components/bits'
+import { Btn, Dot, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { KettleDial, mmss } from '../../components/Kettle'
-import { elapsed, useWorld } from '../../store/world'
+import { elapsed, telHref, useWorld } from '../../store/world'
 import type { Incident, PayMethod } from '../../store/types'
 import type { World } from '../../store/types'
 import { FamilyStrip } from './FamilyStrip'
 import { factsFor } from './facts'
+import { MeButton } from '../../shell/Shell'
 
 // F-C1 → F-C2 → F-C4, with F-C3/F-C5 running underneath.
 // v2 rules (see docs/ROAST.md):
@@ -47,19 +48,20 @@ export function CheckFlow() {
 // ── One header: the kettle timer and the live family line, together. ──
 function CrisisHeader({ inc }: { inc: Incident }) {
   const { w, dispatch } = useWorld()
-  const onCall = w.call?.state === 'active'
   return (
     <header className="m-head">
-      <Spec ids="F-C4 F-C5" />
       <div className="m-head__row">
         <span className="m-head__pause">
           <Icon name="kettle" size={28} />
           <b>{mmss(inc.pauseEndsAt - w.now)}</b>
           <span>pause</span>
         </span>
-        <button className="m-head__out" onClick={() => dispatch({ type: 'close', how: 'hung-up' })}>
-          {onCall ? 'I’ve hung up' : 'Stop'}
-        </button>
+        <span className="m-head__tools">
+          <button className="m-head__out" onClick={() => dispatch({ type: 'close', how: 'hung-up' })}>
+            {inc.practice ? 'Stop' : 'I’ve hung up'}
+          </button>
+          <MeButton />
+        </span>
       </div>
       <LiveLine w={w} inc={inc} />
     </header>
@@ -84,24 +86,38 @@ function LiveLine({ w, inc }: { w: World; inc: Incident }) {
   )
 }
 
-// ── Dock: the decision, pinned to the bottom. Family calls ring in here too. ──
+// ── Dock: the decision, pinned to the bottom. If a relative chose
+// “I'll ring Mum now”, that news lives here too.
 function Dock({ children }: { children?: ReactNode }) {
-  const { w, dispatch } = useWorld()
-  const fc = w.familyCall
-  const ringing = fc && fc.to === 'margaret' && fc.state === 'ringing' ? MEMBERS[fc.from] : null
+  const { w } = useWorld()
+  const inc = w.incident
+  const caller = inc && !inc.closed && inc.calling ? MEMBERS[inc.calling] : null
   return (
     <div className="m-dock">
-      {ringing && (
+      {caller && (
         <div className="m-waiting" role="alert">
-          <Spec ids="F-C5" />
-          <Stamp id={ringing.id} size={40} />
-          <p><b>{ringing.name} is ringing you</b> on {ringing.name}’s usual number.</p>
-          <Btn tone="ink" big icon="handset" onClick={() => dispatch({ type: 'ring-answer' })}>Hang up and answer {ringing.name}</Btn>
+          <Stamp id={caller.id} size={40} />
+          <p><b>{caller.name} is ringing you now</b> on {caller.name}’s usual number. Hang up on the caller and answer {caller.name}.</p>
         </div>
       )}
       {children}
     </div>
   )
+}
+
+function HungUp({ practice }: { practice: boolean }) {
+  const { dispatch } = useWorld()
+  return practice ? (
+    <Btn tone="ink" big onClick={() => dispatch({ type: 'close', how: 'done' })}>Finish practice</Btn>
+  ) : (
+    <Btn tone="red" big icon="handset" onClick={() => dispatch({ type: 'close', how: 'hung-up' })}>I’ve hung up</Btn>
+  )
+}
+
+function Ring({ who, practice }: { who: MemberId; practice: boolean }) {
+  if (practice) return null
+  const m = MEMBERS[who]
+  return <Btn tone="paper" icon="handset" href={telHref(m.phone)}>Ring {m.name}</Btn>
 }
 
 function BackLink() {
@@ -119,7 +135,6 @@ function Who() {
   return (
     <>
       <section className="m-step">
-        <Spec ids="F-C1" />
         <h1 className="m-q">Who do they say they are?</h1>
         <div className="m-who">
           {people.map((p) => (
@@ -143,7 +158,6 @@ function Question({ inc }: { inc: Incident }) {
   return (
     <>
       <section className="m-step">
-        <Spec ids="F-C2" />
         <p className="m-label">Ask them this</p>
         <div className="m-card m-card--ask">
           <p className="m-card__q">“{q.ask}”</p>
@@ -205,17 +219,15 @@ function ringTarget(w: World, inc: Incident): MemberId {
 }
 
 function Pause({ inc }: { inc: Incident }) {
-  const { w, dispatch } = useWorld()
+  const { w } = useWorld()
   const left = inc.pauseEndsAt - w.now
   const total = w.settings.pauseMinutes * 60_000
   const done = left <= 0
   const facts = factsFor(inc)
-  const onCall = w.call?.state === 'active'
-  const target = MEMBERS[ringTarget(w, inc)]
+  const target = ringTarget(w, inc)
   return (
     <>
       <section className="m-step m-pause">
-        <Spec ids="F-C4" />
         <div className="m-pause__dial">
           <KettleDial left={left} total={total} size={128} />
           <div>
@@ -224,7 +236,7 @@ function Pause({ inc }: { inc: Incident }) {
           </div>
         </div>
         <h1 className="m-q">{done ? 'Still nothing from family. Keep waiting — don’t send anything.' : 'Don’t send anything for ten minutes.'}</h1>
-        {onCall && (
+        {!inc.practice && (
           <div className="m-script">
             <p className="m-label">Say this to them</p>
             <p className="m-script__line">“I’ll ring you back in ten minutes.”</p>
@@ -251,59 +263,41 @@ function Pause({ inc }: { inc: Incident }) {
         )}
       </section>
       <Dock>
-        {onCall ? (
-          <>
-            <Btn tone="red" big icon="handset" onClick={() => dispatch({ type: 'close', how: 'hung-up' })}>Hang up</Btn>
-            <Btn tone="paper" icon="handset" onClick={() => dispatch({ type: 'hangup-ring', to: target.id })}>Hang up and ring {target.name}</Btn>
-          </>
-        ) : (
-          <>
-            <Btn tone="ink" big onClick={() => dispatch({ type: 'close', how: 'done' })}>I’m done</Btn>
-            <Btn tone="paper" icon="handset" onClick={() => dispatch({ type: 'hangup-ring', to: target.id })}>Ring {target.name}</Btn>
-          </>
-        )}
+        <HungUp practice={inc.practice} />
+        <Ring who={target} practice={inc.practice} />
       </Dock>
     </>
   )
 }
 
-// A relative's answer: useful, never final (roast #6, S-04).
+// A relative's answer: useful, never final (S-04).
 function SecondHand({ inc }: { inc: Incident }) {
-  const { w, dispatch } = useWorld()
   const by = MEMBERS[inc.secondhand!.by]
   const claimed = inc.claimed && inc.claimed !== 'other' ? MEMBERS[inc.claimed] : null
-  const onCall = w.call?.state === 'active'
   return (
     <>
       <section className="m-outcome m-outcome--soft" style={{ ['--who' as string]: by.color }}>
-        <Spec ids="F-C5 F-C3" />
         <Stamp id={by.id} size={64} />
         <h1 className="m-outcome__head m-outcome__head--s">{by.name} answered: “I know where {claimed?.name ?? 'they are'}{claimed ? ' is' : ''} right now.”</h1>
         {claimed && <p className="m-body">We’re still asking {claimed.name} on {claimed.name}’s own phone.</p>}
         <p className="m-body m-body--strong">You can hang up. If it was {claimed?.name ?? 'family'}, {claimed?.name ?? 'they'} will ring you on the usual number.</p>
       </section>
       <Dock>
-        {onCall ? (
-          <Btn tone="red" big icon="handset" onClick={() => dispatch({ type: 'close', how: 'hung-up' })}>Hang up</Btn>
-        ) : (
-          <Btn tone="ink" big onClick={() => dispatch({ type: 'close', how: 'done' })}>Okay</Btn>
-        )}
-        {claimed && <Btn tone="paper" icon="handset" onClick={() => dispatch({ type: 'hangup-ring', to: claimed.id })}>{onCall ? 'Hang up and ring' : 'Ring'} {claimed.name}</Btn>}
+        <HungUp practice={inc.practice} />
+        {claimed && <Ring who={claimed.id} practice={inc.practice} />}
       </Dock>
     </>
   )
 }
 
 function Outcome({ inc }: { inc: Incident }) {
-  const { w, dispatch } = useWorld()
+  const { dispatch } = useWorld()
   const o = inc.outcome!
   const by = MEMBERS[o.by]
-  const onCall = w.call?.state === 'active'
   if (o.kind === 'yes-me') {
     return (
       <div className="m-crisis">
         <section className="m-outcome" style={{ ['--who' as string]: by.color }}>
-          <Spec ids="F-C3 F-A1" />
           <Stamp id={o.by} size={96} />
           <h1 className="m-outcome__head">{by.name} answered: “Yes, it’s me.”</h1>
           <p className="m-body">Answered on {by.name}’s own phone, just now. The pause is over.</p>
@@ -320,19 +314,14 @@ function Outcome({ inc }: { inc: Incident }) {
   return (
     <div className="m-crisis">
       <section className="m-outcome" style={{ ['--who' as string]: by.color }}>
-        <Spec ids="F-C3" />
         <Stamp id={o.by} size={96} />
         <h1 className="m-outcome__head">{by.name} answered: “That’s not me.”</h1>
         <p className="m-body">Answered on {by.name}’s own phone, just now.</p>
-        <p className="m-body m-body--strong">{onCall ? 'You can hang up now. You don’t need to explain.' : 'You don’t need to do anything else.'}</p>
+        <p className="m-body m-body--strong">{inc.practice ? 'On a call, this is when you hang up.' : 'You can hang up now. You don’t need to explain.'}</p>
       </section>
       <Dock>
-        {onCall ? (
-          <Btn tone="red" big icon="handset" onClick={() => dispatch({ type: 'close', how: 'hung-up' })}>Hang up</Btn>
-        ) : (
-          <Btn tone="ink" big onClick={() => dispatch({ type: 'close', how: 'done' })}>Okay</Btn>
-        )}
-        <Btn tone="paper" icon="handset" onClick={() => dispatch({ type: 'hangup-ring', to: by.id })}>{onCall ? 'Hang up and ring' : 'Ring'} {by.name}</Btn>
+        <HungUp practice={inc.practice} />
+        <Ring who={by.id} practice={inc.practice} />
       </Dock>
     </div>
   )
