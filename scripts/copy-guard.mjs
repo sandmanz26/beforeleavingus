@@ -19,8 +19,9 @@ const BANNED = /\b(safe|safely|real|really|verified|verify|verification|genuine|
 // Margaret never sees the word “scam”: on a true emergency (S-04) it reads
 // as an accusation against her grandchild.
 const BANNED_MARGARET = /\b(scams?|scammers?|fraudsters?)\b/i
-// The PM registry quotes the PRD itself and is never shown in the product.
-const SKIP_FILES = new Set(['data/prd.ts'])
+// The PM registry and the design review quote the PRD and the critique;
+// both are team-only and never shown inside a family member's app.
+const SKIP_FILES = new Set(['data/prd.ts', 'data/roast.ts'])
 
 const files = []
 const walk = (d) => {

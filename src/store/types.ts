@@ -36,7 +36,11 @@ export interface Incident {
   secret: 'yes' | 'no' | null
   tree: MemberId[]
   asks: Ask[]
-  outcome: { kind: 'not-me' | 'yes-me' | 'knows-not'; by: MemberId; at: number } | null
+  // Final answer — only ever from the person being impersonated, on their own phone.
+  outcome: { kind: 'not-me' | 'yes-me'; by: MemberId; at: number } | null
+  // A relative's view (“I know where Emma is”). Useful, never final:
+  // the named person keeps being asked and can override it (S-04).
+  secondhand: { by: MemberId; at: number } | null
   calling: MemberId | null
   closed: null | { how: 'hung-up' | 'done'; at: number }
 }
@@ -47,6 +51,14 @@ export interface Call {
   shownAs?: MemberId
   saved: boolean
   spam?: boolean
+  startedAt: number
+}
+
+// A call between two family members' saved numbers (P-10: calling back works).
+export interface FamilyCall {
+  from: MemberId
+  to: MemberId
+  state: 'ringing' | 'active' | 'missed'
   startedAt: number
 }
 
@@ -70,6 +82,7 @@ export interface Away {
 }
 
 export interface World {
+  session: number // bumps on every story load so each phone starts fresh
   now: number
   speed: number
   scenarioId: string | null
@@ -81,6 +94,7 @@ export interface World {
   autoReplies: { member: MemberId; afterSec: number; reply: Reply }[]
   settings: Settings
   call: Call | null
+  familyCall: FamilyCall | null
   queue: { at: number; type: 'ring' | 'spam' | 'spam-end' | 'consent-ask'; payload?: string }[]
   incident: Incident | null
   pastIncidents: Incident[]

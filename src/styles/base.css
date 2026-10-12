@@ -138,19 +138,22 @@ input, textarea { font: inherit; color: inherit; }
 .k-spec--tl { top: -9px; left: 8px; }
 .k-spec--inline { position: relative; top: auto; right: auto; margin-right: 4px; vertical-align: middle; }
 .k-spec__tag {
+  /* v2: plain white luggage tags — yellow belongs to the help/pause system (roast #11) */
   font: 700 10.5px/1 var(--font-mono); letter-spacing: 0.02em;
-  padding: 4px 6px 3px 12px; border-radius: 3px 6px 6px 3px;
-  background: var(--yolk) radial-gradient(circle at 5px 50%, var(--navy) 1.6px, transparent 2px);
-  color: var(--navy); box-shadow: 0 0 0 1.5px var(--navy);
+  padding: 4px 6px 3px 13px; border-radius: 3px 7px 7px 3px;
+  background: #fff radial-gradient(circle at 6px 50%, var(--duck-3) 1.8px, transparent 2.2px);
+  color: var(--navy); box-shadow: 0 0 0 1.5px var(--navy), 1px 2px 0 var(--navy);
   white-space: nowrap;
 }
-.k-spec__tag:hover { background-color: var(--enamel); }
+.k-spec__tag { cursor: pointer; }
+.k-spec__tag:hover { background-color: var(--duck); }
 
 /* ── Phone frame ───────────────────────────────────────────────────── */
 .k-phone {
   position: relative;
-  width: 384px;
-  height: min(820px, calc(100dvh - 128px));
+  transform: translateZ(0); /* makes the phone the containing block for OS overlays */
+  width: 375px;
+  height: min(820px, calc(100dvh - 166px));
   min-height: 600px;
   display: flex; flex-direction: column;
   background: var(--enamel);
@@ -194,7 +197,7 @@ input, textarea { font: inherit; color: inherit; }
 
 /* ── OS-level chrome (not KinVoice): incoming call + banners ───────── */
 .os-call {
-  position: absolute; inset: 0; z-index: 10;
+  position: fixed; inset: 34px 0 0; z-index: 10;
   display: flex; flex-direction: column; align-items: center;
   padding: 56px 24px 40px;
   background: linear-gradient(180deg, #24334d, #0f1a2c);
@@ -218,7 +221,7 @@ input, textarea { font: inherit; color: inherit; }
 .os-btn--accept svg { background: var(--os-green); }
 
 .os-banner {
-  position: absolute; top: 8px; left: 10px; right: 10px; z-index: 12;
+  position: relative; margin: 8px 10px 0; z-index: 12; width: calc(100% - 20px);
   display: grid; gap: 2px; text-align: left;
   padding: 12px 14px; border-radius: 18px;
   background: rgba(252, 253, 251, 0.97);
@@ -229,3 +232,10 @@ input, textarea { font: inherit; color: inherit; }
 .os-banner b { font-size: 16px; }
 .os-banner span:last-child { font-size: 14px; color: var(--ink-2); }
 @keyframes os-drop { from { transform: translateY(-120%); } }
+
+/* Family calls (v2, roast #8) */
+.os-call--family { gap: 6px; padding-top: 70px; }
+.os-call--family .k-stamp { margin: 6px 0 4px; }
+.os-call--family .os-call__num { max-width: 26ch; line-height: 1.4; }
+.os-call--live { background: linear-gradient(180deg, #1f5b3d, #0f2a1d); }
+.os-call__actions--one { justify-content: center; }

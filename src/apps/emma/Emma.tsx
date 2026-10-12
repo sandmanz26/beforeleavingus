@@ -3,6 +3,7 @@ import { Btn, Pill, Spec, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { useWorld } from '../../store/world'
 import { AnsweredCard, AskCard } from '../shared/AskCard'
+import { FamilyCallLayer } from '../../components/FamilyCall'
 
 type Screen = 'home' | 'pattern' | 'footprint' | 'consent'
 
@@ -15,12 +16,14 @@ export function EmmaApp() {
   if (inc && !inc.closed && mine?.state === 'asking')
     return (
       <div className="e-app e-app--ask">
+        <FamilyCallLayer me="emma" />
         <AskCard me="emma" inc={inc} />
       </div>
     )
 
   return (
     <div className="e-app">
+      <FamilyCallLayer me="emma" />
       {screen === 'home' && <Home go={setScreen} />}
       {screen === 'pattern' && <Pattern back={() => setScreen('home')} />}
       {screen === 'footprint' && <Footprint back={() => setScreen('home')} />}

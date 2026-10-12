@@ -22,14 +22,14 @@
 .st-btn:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px var(--navy), 0 1px 0 var(--navy); }
 .st-switch { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 0 6px; cursor: pointer; }
 
-.st-body { flex: 1; display: flex; gap: 28px; padding: 24px; align-items: flex-start; }
+.st-body { flex: 1; display: flex; gap: 28px; padding: 22px 24px 24px; align-items: flex-start; }
 .st-rail {
   width: 300px; flex: none;
   position: sticky; top: 88px;
   max-height: calc(100dvh - 112px); overflow-y: auto;
   scrollbar-width: thin;
 }
-.st-phones { flex: 1; display: flex; gap: 28px; justify-content: center; align-items: flex-start; min-width: 0; }
+.st-phones { flex: 1; display: flex; gap: 24px; justify-content: center; align-items: flex-start; min-width: 0; }
 .st-slot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .st-tag { display: flex; align-items: center; gap: 8px; font-size: 14px; height: 38px; }
 .st-tag b { font-weight: 800; }
@@ -144,11 +144,7 @@ li > .sb-card__line { margin-top: 0; border-radius: 0 0 12px 12px; }
   .st-body { padding: 16px; }
 }
 @media (max-width: 720px) {
-  .st-top { padding: 8px 16px; flex-wrap: wrap; gap: 8px; }
-  .st-brand__name { font-size: 24px; }
-  .st-tools { width: 100%; justify-content: space-between; }
-  .st-btn { padding: 6px 10px; font-size: 14px; }
-  .st-switch span { font-size: 14px; }
+  .st-top { padding: 8px 16px; gap: 8px; }
   .st-body { padding: 10px 0 0; }
   .st-slot { width: 100%; }
   .k-phone { width: 100%; border-radius: 0; border-width: 0; border-top: 2px solid var(--navy); height: calc(100dvh - 160px); min-height: 540px; box-shadow: none; }
@@ -159,4 +155,38 @@ li > .sb-card__line { margin-top: 0; border-radius: 0 0 12px 12px; }
   .fm-table thead { display: none; }
   .fm-table tr { display: grid; padding: 8px 0; border-bottom: 1.5px solid var(--line); }
   .fm-table td { border: 0; padding: 3px 0; }
+}
+
+.st-btn--roast svg { color: var(--red); }
+
+/* ── Design review ─────────────────────────────────────────────────── */
+.rv-list { display: grid; gap: 14px; }
+.rv-item { display: grid; grid-template-columns: 150px 1fr; gap: 20px; padding: 16px; border-radius: 18px; box-shadow: inset 0 0 0 1.5px var(--line-2); align-items: start; }
+.rv-item img { width: 150px; border-radius: 14px; box-shadow: 0 0 0 2px var(--navy); display: block; }
+.rv-noimg { width: 150px; height: 120px; display: grid; place-items: center; border-radius: 14px; background: var(--duck); color: var(--red); }
+.rv-meta { font: 600 12px var(--font-mono); color: var(--ink-2); }
+.rv-sev { display: inline-block; padding: 2px 8px; border-radius: 99px; background: var(--duck-2); color: var(--navy); font-weight: 700; margin-right: 4px; }
+.rv-item.is-critical .rv-sev { background: var(--red); color: #fff; }
+.rv-item.is-high .rv-sev { background: var(--navy); color: var(--enamel); }
+.rv-item h2 { font-family: var(--font-display); font-weight: 400; font-size: 24px; line-height: 1.1; margin: 6px 0 8px; }
+.rv-burn { font-size: 15.5px; line-height: 1.5; }
+.rv-fix { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--duck); font-size: 15px; line-height: 1.45; }
+.rv-fix b { font: 700 12px var(--font-mono); background: var(--navy); color: var(--enamel); padding: 2px 6px; border-radius: 6px; margin-right: 6px; }
+.rv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.rv-bullets { display: grid; gap: 8px; }
+.rv-bullets li { padding-left: 18px; position: relative; font-size: 15px; }
+.rv-bullets li::before { content: ''; position: absolute; left: 0; top: 8px; width: 8px; height: 8px; border-radius: 2px; background: var(--navy); }
+
+@media (max-width: 720px) {
+  .st-top { flex-wrap: nowrap; }
+  .st-brand__name { font-size: 22px; }
+  .st-tools { width: auto; gap: 6px; }
+  .st-btn { width: 42px; padding: 0; justify-content: center; }
+  .st-btn__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .st-switch { padding: 0; }
+  .k-phone { height: calc(100dvh - 112px); }
+  .spec-sheet { left: 0; right: 0; bottom: 0; width: 100%; border-radius: 18px 18px 0 0; max-height: 60vh; }
+  .rv-item { grid-template-columns: 1fr; }
+  .rv-item img, .rv-noimg { width: 120px; }
+  .rv-cols { grid-template-columns: 1fr; }
 }

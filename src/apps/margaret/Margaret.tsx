@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { MEMBERS, type MemberId } from '../../data/family'
 import { Btn, Spec, Stamp } from '../../components/bits'
 import { Icon, RingingIcon } from '../../components/Icon'
+import { FamilyCallLayer } from '../../components/FamilyCall'
 import { elapsed, useWorld } from '../../store/world'
 import { CheckFlow } from './CheckFlow'
 import { Happened } from './Happened'
@@ -26,8 +27,10 @@ export function MargaretApp() {
   else body = <Home go={setScreen} />
 
   const callActive = call?.state === 'active'
+  const inCrisis = !!inc && inc.kind === 'call' && !inc.closed
   return (
     <div className="m-app">
+      <FamilyCallLayer me="margaret" suppressIncoming={inCrisis} />
       {callActive && (
         <div className="m-incall">
           <Icon name="handset" size={18} />
@@ -42,7 +45,8 @@ export function MargaretApp() {
         </div>
       )}
       {body}
-      {callActive && (!inc || inc.kind !== 'call') && (
+      {/* On home the big yellow button already is the tab (roast #9). */}
+      {callActive && (!inc || inc.kind !== 'call') && !(screen === 'home' && !inc) && (
         <button className="m-helptab" onClick={() => dispatch({ type: 'help' })}>
           <Spec ids="F-C1" place="tl" />
           <RingingIcon size={30} />
@@ -72,14 +76,21 @@ function Home({ go }: { go: (s: Screen) => void }) {
         {greeting(w.now)},<br />Margaret.
       </h1>
 
-      <ul className="m-fam" aria-label="Your family">
-        {family.map((id) => (
-          <li key={id}>
-            <Stamp id={id} size={50} />
-            <span>{MEMBERS[id].name}</span>
-          </li>
-        ))}
-      </ul>
+      <section className="m-fam" aria-label="Ring your family">
+        <Spec ids="F-C5" />
+        <ul>
+          {family.map((id) => (
+            <li key={id}>
+              <button onClick={() => dispatch({ type: 'ring', from: 'margaret', to: id })} aria-label={`Ring ${MEMBERS[id].name}`}>
+                <Stamp id={id} size={52} />
+                <span>{MEMBERS[id].name}</span>
+                <i className="m-fam__ring"><Icon name="handset" size={14} stroke={3} /></i>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p>Tap a face to ring them.</p>
+      </section>
 
       <button className="m-help" onClick={() => dispatch({ type: 'help' })}>
         <Spec ids="F-C1" />
@@ -94,25 +105,18 @@ function Home({ go }: { go: (s: Screen) => void }) {
         <div className="m-drill">
           <Spec ids="F-E2" />
           <p>
-            <b>David set up a practice.</b> Two minutes. Nothing is sent anywhere.
+            <b>David set up a practice.</b> Two minutes. Nothing goes outside the family.
           </p>
           <Btn tone="ink" onClick={() => dispatch({ type: 'practice-start' })}>Start the practice</Btn>
         </div>
       )}
 
-      <div className="m-tiles">
-        <button className="m-tile" onClick={() => go('voice')}>
-          <Spec ids="F-D1" />
-          <Icon name="voicenote" size={34} />
-          <span>Check a voice message</span>
-          {w.freshMessage && <em className="m-tile__new">1 new</em>}
-        </button>
-        <button className="m-tile" onClick={() => go('stories')}>
-          <Spec ids="F-E1" />
-          <Icon name="book" size={34} />
-          <span>Why the family set this up</span>
-        </button>
-      </div>
+      <button className="m-tile m-tile--wide" onClick={() => go('voice')}>
+        <Spec ids="F-D1" />
+        <Icon name="voicenote" size={34} />
+        <span>Check a voice message</span>
+        {w.freshMessage ? <em className="m-tile__new">1 new</em> : <Icon name="chevron" size={22} />}
+      </button>
 
       <p className="m-quiet">
         <Spec ids="F-A2" place="inline" />
@@ -120,12 +124,20 @@ function Home({ go }: { go: (s: Screen) => void }) {
         {w.quietToday} calls today looked like sales calls. Nothing for you to do.
       </p>
 
-      <button className="m-happened" onClick={() => go('happened')}>
-        <Spec ids="F-F1" place="inline" />
-        <Icon name="buoy" size={24} />
-        Something already happened
-        <Icon name="chevron" size={20} />
-      </button>
+      <nav className="m-links">
+        <button onClick={() => go('happened')}>
+          <Spec ids="F-F1" place="inline" />
+          <Icon name="buoy" size={24} />
+          Something already happened
+          <Icon name="chevron" size={20} />
+        </button>
+        <button onClick={() => go('stories')}>
+          <Spec ids="F-E1" place="inline" />
+          <Icon name="book" size={24} />
+          Why the family set this up
+          <Icon name="chevron" size={20} />
+        </button>
+      </nav>
     </div>
   )
 }

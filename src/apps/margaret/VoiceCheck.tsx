@@ -57,11 +57,11 @@ export function VoiceCheck({ onBack }: { onBack: () => void }) {
 function MessageDetail({ msg, onBack }: { msg: VoiceMessage; onBack: () => void }) {
   const { w, dispatch } = useWorld()
   const inc = w.incident?.kind === 'message' && w.incident.messageId === msg.id ? w.incident : null
-  const [checked, setChecked] = useState(!!inc)
   const [playing, setPlaying] = useState(false)
   const [pos, setPos] = useState(0)
   const claimed = MEMBERS[msg.claims]
   const profile = w.profiles[msg.claims as 'david' | 'emma' | 'rob']
+  // v2: the comparison runs as soon as the message opens (roast #12).
   const result = checkWords(msg.transcript, profile, claimed.name)
 
   useEffect(() => {
@@ -74,69 +74,76 @@ function MessageDetail({ msg, onBack }: { msg: VoiceMessage; onBack: () => void 
     const by = MEMBERS[inc.outcome.by]
     const no = inc.outcome.kind !== 'yes-me'
     return (
-      <section className="m-outcome" style={{ ['--who' as string]: by.color }}>
-        <Spec ids="F-C3" />
-        <Stamp id={inc.outcome.by} size={96} />
-        <h1 className="m-outcome__head">{no ? `${by.name} answered: “I didn’t send that.”` : `${by.name} answered: “Yes, that was me.”`}</h1>
-        <p className="m-body">Answered on {by.name}’s own phone, just now.</p>
-        {no && <p className="m-body m-body--strong">You don’t need to reply to it.</p>}
-        <div className="m-answers">
+      <div className="m-crisis">
+        <section className="m-outcome" style={{ ['--who' as string]: by.color }}>
+          <Spec ids="F-C3" />
+          <Stamp id={inc.outcome.by} size={96} />
+          <h1 className="m-outcome__head">{no ? `${by.name} answered: “I didn’t send that.”` : `${by.name} answered: “Yes, that was me.”`}</h1>
+          <p className="m-body">Answered on {by.name}’s own phone, just now.</p>
+          {no && <p className="m-body m-body--strong">You don’t need to reply to it.</p>}
+        </section>
+        <div className="m-dock">
           <Btn tone="ink" big onClick={() => dispatch({ type: 'clear-incident' })}>Okay</Btn>
         </div>
-      </section>
+      </div>
     )
   }
 
   return (
-    <div className="m-page">
-      <BackBar onBack={onBack} title="Voice message" />
-      <div className="m-player">
-        <button className="m-player__play" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
-          <Icon name={playing ? 'pause' : 'play'} size={30} />
-        </button>
-        <div className="m-player__wave" aria-hidden>
-          {msg.bars.map((b, i) => (
-            <span key={i} style={{ height: `${b}%` }} className={i < pos ? 'is-played' : ''} />
-          ))}
-        </div>
-        <span className="m-player__len">{msg.length}</span>
-      </div>
-      <p className="m-from">
-        From <b>{msg.from}</b>
-        {!msg.fromSaved && ' — not saved in your phone'}
-      </p>
-      <blockquote className="m-transcript">{msg.transcript}</blockquote>
-
-      {!checked ? (
-        <Btn tone="yolk" big icon="ear" onClick={() => setChecked(true)}>
-          Does this sound like {claimed.name}?
-        </Btn>
-      ) : (
+    <div className="m-crisis">
+      <div className="m-page">
+        <BackBar onBack={onBack} title="Voice message" />
         <section className="m-result">
           <Spec ids="F-D1 F-B1" />
+          <p className="m-from">
+            {msg.fromSaved ? <>From <b>{msg.from}</b></> : <>From <b>{msg.from}</b> — not saved in your phone. It says it’s {claimed.name}.</>}
+          </p>
           <h2 className={`m-result__head is-${result.summary}`}>{result.headline}</h2>
           <ul className="m-findings">
             {result.findings.map((f, i) => (
               <li key={i} className={`is-${f.tone}`}>
                 <span className="m-findings__mark">
-                  <Icon name={f.tone === 'match' ? 'tick' : f.tone === 'differs' ? 'cross' : f.tone === 'flag' ? 'info' : 'info'} size={20} stroke={3} />
+                  <Icon name={f.tone === 'match' ? 'tick' : f.tone === 'differs' ? 'cross' : 'info'} size={20} stroke={3} />
                 </span>
                 {f.text}
               </li>
             ))}
           </ul>
           {result.summary === 'matches' && <p className="m-body m-muted">Words can be copied too. If a message ever asks for money, check with family first.</p>}
-          {inc ? (
-            <FamilyStrip inc={inc} />
-          ) : (
-            <div className="m-answers">
-              <Btn tone={result.summary === 'matches' ? 'paper' : 'ink'} big icon="people" onClick={() => dispatch({ type: 'message-ask', messageId: msg.id })}>
-                Ask {claimed.name} on {claimed.name}’s own phone
-              </Btn>
-            </div>
-          )}
         </section>
-      )}
+        <details className="m-heard">
+          <summary>
+            <Icon name="voicenote" size={24} /> Listen and read it again
+          </summary>
+          <div className="m-player">
+            <button className="m-player__play" onClick={() => setPlaying(!playing)} aria-label={playing ? 'Pause' : 'Play'}>
+              <Icon name={playing ? 'pause' : 'play'} size={30} />
+            </button>
+            <div className="m-player__wave" aria-hidden>
+              {msg.bars.map((b, i) => (
+                <span key={i} style={{ height: `${b}%` }} className={i < pos ? 'is-played' : ''} />
+              ))}
+            </div>
+            <span className="m-player__len">{msg.length}</span>
+          </div>
+          <blockquote className="m-transcript">{msg.transcript}</blockquote>
+        </details>
+        {inc && <FamilyStrip inc={inc} />}
+      </div>
+      <div className="m-dock">
+        {inc ? (
+          <p className="m-dock__wait"><Icon name="clock" size={22} /> Waiting for {claimed.name}. You can go back home — the answer will appear here.</p>
+        ) : result.summary === 'matches' ? (
+          <>
+            <Btn tone="ink" big onClick={onBack}>Done</Btn>
+            <Btn tone="paper" icon="people" onClick={() => dispatch({ type: 'message-ask', messageId: msg.id })}>Ask {claimed.name} anyway</Btn>
+          </>
+        ) : (
+          <Btn tone="ink" big icon="people" onClick={() => dispatch({ type: 'message-ask', messageId: msg.id })}>
+            Ask {claimed.name} on {claimed.name}’s own phone
+          </Btn>
+        )}
+      </div>
     </div>
   )
 }

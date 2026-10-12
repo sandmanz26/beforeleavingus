@@ -3,6 +3,7 @@ import { Btn, Spec, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { useWorld } from '../../store/world'
 import { AnsweredCard, AskCard } from '../shared/AskCard'
+import { FamilyCallLayer } from '../../components/FamilyCall'
 
 // Rob: backup verifier who barely opens the app (persona D). His whole
 // experience is notifications — so it's a lock screen.
@@ -18,12 +19,14 @@ export function RobApp() {
   if (inc && !inc.closed && mine?.state === 'asking')
     return (
       <div className="r-app r-app--ask">
+        <FamilyCallLayer me="rob" />
         <AskCard me="rob" inc={inc} />
       </div>
     )
 
   return (
     <div className="r-app">
+      <FamilyCallLayer me="rob" />
       <div className="r-lock">
         <p className="r-lock__date">{date}</p>
         <p className="r-lock__time">{time}</p>

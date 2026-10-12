@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MEMBERS, type MemberId } from '../../data/family'
 import { Btn, Pill, Spec, Stamp } from '../../components/bits'
 import { Icon } from '../../components/Icon'
 import { activeIncident, elapsed, useWorld } from '../../store/world'
-import { AnsweredCard, AskCard } from '../shared/AskCard'
+import { AnsweredCard, AskCard, HandoffCard } from '../shared/AskCard'
+import { FamilyCallLayer } from '../../components/FamilyCall'
 import { Circle } from './Circle'
 import { Questions } from './Questions'
 import { Log } from './Log'
@@ -35,6 +36,7 @@ export function DavidApp() {
 
   return (
     <div className="d-app">
+      <FamilyCallLayer me="david" />
       <Banner onOpen={() => { setSub(null); setTab('home') }} />
       <div className="d-scroll">{content}</div>
       <nav className="d-tabs" aria-label="David’s app">
@@ -50,12 +52,20 @@ export function DavidApp() {
 }
 
 // OS notification banner — the only interruption David ever gets (F-A1).
+// v2: sits in the flow (never on top of the card it announces) and folds
+// away after a few seconds (roast #13).
 function Banner({ onOpen }: { onOpen: () => void }) {
   const { w, dispatch } = useWorld()
   const inc = activeIncident(w)
+  const id = inc ? `${inc.id}:start` : ''
+  const [gone, setGone] = useState<string | null>(null)
+  useEffect(() => {
+    if (!id) return
+    const t = setTimeout(() => setGone(id), 5000)
+    return () => clearTimeout(t)
+  }, [id])
   if (!inc || !inc.claimed) return null
-  const id = `${inc.id}:start`
-  if (w.seenBy.david?.includes(id)) return null
+  if (w.seenBy.david?.includes(id) || gone === id) return null
   const who = inc.claimed === 'other' ? 'an official' : MEMBERS[inc.claimed].name
   return (
     <button className="os-banner" onClick={() => { dispatch({ type: 'seen', member: 'david', id }); onOpen() }}>
@@ -156,7 +166,18 @@ function Live() {
   const step = !inc.claimed ? 'Choosing who it is' : inc.question === null ? 'Asking the family question' : inc.money === null ? 'Being asked about money' : inc.secret === null && inc.kind === 'call' ? 'Answering questions' : 'On the kettle pause'
   return (
     <div className="d-live">
-      {answered ? <AnsweredCard me="david" inc={inc} /> : <AskCard me="david" inc={inc} />}
+      {inc.outcome?.kind === 'yes-me' && inc.outcome.by !== 'david' ? (
+        <HandoffCard inc={inc} />
+      ) : inc.outcome ? (
+        <section className="ask ask--done">
+          <Stamp id={inc.outcome.by} size={40} />
+          <p className="ask__head ask__head--s">{MEMBERS[inc.outcome.by].name} answered “That’s not me”. Mum has been told she can hang up.</p>
+        </section>
+      ) : answered ? (
+        <AnsweredCard me="david" inc={inc} />
+      ) : (
+        <AskCard me="david" inc={inc} />
+      )}
       <section className="d-card d-card--line">
         <Spec ids="F-C5" />
         <h2 className="d-small">Phone tree, live</h2>

@@ -11,6 +11,7 @@ import { RobApp } from '../apps/rob/Rob'
 import { Storyboard } from './Storyboard'
 import { FeatureMap } from './FeatureMap'
 import { SpecSheet } from './SpecSheet'
+import { Review } from './Review'
 import { useUI } from './ui'
 
 const APPS: Record<MemberId, () => React.JSX.Element> = {
@@ -20,15 +21,19 @@ const APPS: Record<MemberId, () => React.JSX.Element> = {
   rob: RobApp,
 }
 
-function useSlots() {
-  const q = () => (window.innerWidth >= 1360 ? 3 : window.innerWidth >= 900 ? 2 : 1)
-  const [n, setN] = useState(q)
+// v2 (roast #16): phones never overlap. Rail only when there's room for it.
+function useLayout() {
+  const q = () => {
+    const x = window.innerWidth
+    return { slots: x >= 1240 ? 3 : x >= 860 ? 2 : 1, rail: x >= 1600 }
+  }
+  const [l, setL] = useState(q)
   useEffect(() => {
-    const on = () => setN(q())
+    const on = () => setL(q())
     window.addEventListener('resize', on)
     return () => window.removeEventListener('resize', on)
   }, [])
-  return n
+  return l
 }
 
 // Who needs attention right now — drives the dots on the phone switcher.
@@ -43,15 +48,23 @@ function useNeeds() {
   }
   if (w.robNudged && w.profiles.rob.consent === 'waiting') needs.rob = true
   if (w.drill === 'scheduled') needs.margaret = true
+  const fc = w.familyCall
+  if (fc?.state === 'ringing') needs[fc.to] = true
   return needs
 }
 
 export function Stage() {
-  const slots = useSlots()
-  const { specs, setSpecs } = useUI()
+  const { slots, rail } = useLayout()
+  const { specs, setSpecs, openFeature } = useUI()
+  const { w } = useWorld()
   const [map, setMap] = useState(false)
+  const [review, setReview] = useState(false)
   const [stories, setStories] = useState(false)
   const needs = useNeeds()
+  const toggleSpecs = (v: boolean) => {
+    setSpecs(v)
+    if (!v) openFeature(null)
+  }
 
   const groups: MemberId[][] =
     slots === 3 ? [['margaret'], ['david'], ['emma', 'rob']] : slots === 2 ? [['margaret'], ['david', 'emma', 'rob']] : [['margaret', 'david', 'emma', 'rob']]
@@ -68,35 +81,38 @@ export function Stage() {
           <span className="st-brand__sub">Family voice check · clickable prototype · mock data</span>
         </div>
         <div className="st-tools">
-          {slots < 3 && (
-            <button className="st-btn" onClick={() => setStories(true)}>
-              <Icon name="book" size={20} /> Stories
+          {!rail && (
+            <button className="st-btn" onClick={() => setStories(true)} aria-label="Stories">
+              <Icon name="book" size={20} /> <span className="st-btn__label">Stories</span>
             </button>
           )}
-          <label className="st-switch">
-            <Toggle on={specs} onChange={setSpecs} label="Show spec tags" />
-            <span>Spec tags</span>
-          </label>
-          <button className="st-btn" onClick={() => setMap(true)}>
-            <Icon name="map" size={20} /> Feature map
+          <span className="st-switch">
+            <Toggle on={specs} onChange={toggleSpecs} label="Show spec tags" />
+            <span className="st-btn__label" aria-hidden>Spec tags</span>
+          </span>
+          <button className="st-btn" onClick={() => setMap(true)} aria-label="Feature map">
+            <Icon name="map" size={20} /> <span className="st-btn__label">Feature map</span>
+          </button>
+          <button className="st-btn st-btn--roast" onClick={() => setReview(true)} aria-label="Design review">
+            <Icon name="flame" size={20} /> <span className="st-btn__label">Design review</span>
           </button>
         </div>
       </header>
 
       <div className="st-body">
-        {slots === 3 && (
+        {rail && (
           <aside className="st-rail">
             <Storyboard />
           </aside>
         )}
         <main className="st-phones">
           {groups.map((g, i) => (
-            <Slot key={g.join('-') + i} members={g} needs={needs} />
+            <Slot key={`${g.join('-')}${i}`} members={g} needs={needs} session={w.session} />
           ))}
         </main>
       </div>
 
-      {stories && slots < 3 && (
+      {stories && !rail && (
         <div className="st-drawer" role="dialog" aria-label="Stories">
           <div className="st-drawer__panel">
             <button className="st-close" onClick={() => setStories(false)} aria-label="Close stories">
@@ -107,12 +123,13 @@ export function Stage() {
         </div>
       )}
       {map && <FeatureMap onClose={() => setMap(false)} />}
+      {review && <Review onClose={() => setReview(false)} />}
       <SpecSheet />
     </div>
   )
 }
 
-function Slot({ members, needs }: { members: MemberId[]; needs: Partial<Record<MemberId, boolean>> }) {
+function Slot({ members, needs, session }: { members: MemberId[]; needs: Partial<Record<MemberId, boolean>>; session: number }) {
   const [who, setWho] = useState<MemberId>(members[0])
   const { w } = useWorld()
   const inc = activeIncident(w)
@@ -126,6 +143,12 @@ function Slot({ members, needs }: { members: MemberId[]; needs: Partial<Record<M
     // Never pull the view away from Margaret mid-check on a single-phone screen.
     if (target && !members.includes('margaret')) setWho(target)
   }, [askingKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A family call rings the callee's phone into view too.
+  const ringingTo = w.familyCall?.state === 'ringing' ? w.familyCall.to : null
+  useEffect(() => {
+    if (ringingTo && members.includes(ringingTo) && !members.includes('margaret')) setWho(ringingTo)
+  }, [ringingTo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const App = APPS[current]
   const m = MEMBERS[current]
@@ -148,7 +171,8 @@ function Slot({ members, needs }: { members: MemberId[]; needs: Partial<Record<M
         </p>
       )}
       <Phone who={current}>
-        <App />
+        {/* a new story remounts every app, so no screen carries over (roast #16) */}
+        <App key={session} />
       </Phone>
     </section>
   )

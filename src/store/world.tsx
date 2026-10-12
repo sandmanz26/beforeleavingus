@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useReducer, type Dispatch, type R
 import { PROFILES, QUESTIONS, type Consent, type MemberId, type Profile, type Question } from '../data/family'
 import { MESSAGES } from '../data/messages'
 import { SCENARIOS } from '../data/scenarios'
-import type { Away, Incident, LogEntry, Money, PayMethod, QResult, Reply, Settings, World } from './types'
+import type { Away, Incident, LogEntry, PayMethod, QResult, Reply, Settings, World } from './types'
 
 // Simulated clock starts Tuesday 13 Oct 2026, 10:58:40 — S-01 happens “Tuesday, 11:00”.
 const START = new Date(2026, 9, 13, 10, 58, 40).getTime()
@@ -16,8 +16,9 @@ const BASE_LOG: LogEntry[] = [
   { id: 'l5', at: 'Mon 14 Sep', kind: 'setup', title: 'Circle set up at Mum’s kitchen table', detail: '3 family questions written together. 52 minutes.' },
 ]
 
-export function baseWorld(speed = 10): World {
+export function baseWorld(speed = 10, session = 0): World {
   return {
+    session,
     now: START,
     speed,
     scenarioId: null,
@@ -29,6 +30,7 @@ export function baseWorld(speed = 10): World {
     autoReplies: [],
     settings: { pauseMinutes: 10, escalateAfterSec: 45, weeklySummary: true },
     call: null,
+    familyCall: null,
     queue: [],
     incident: null,
     pastIncidents: [],
@@ -53,9 +55,8 @@ export type Action =
   | { type: 'help' }
   | { type: 'claim'; who: MemberId | 'other' }
   | { type: 'question'; result: QResult }
-  | { type: 'money'; v: Money }
-  | { type: 'method'; v: PayMethod }
-  | { type: 'secret'; v: 'yes' | 'no' }
+  | { type: 'want'; v: PayMethod | 'none' }
+  | { type: 'back' }
   | { type: 'reply'; member: MemberId; reply: Reply }
   | { type: 'close'; how: 'hung-up' | 'done' }
   | { type: 'clear-incident' }
@@ -74,6 +75,10 @@ export type Action =
   | { type: 'pick-up'; member: MemberId }
   | { type: 'seen'; member: MemberId; id: string }
   | { type: 'disclose'; member: MemberId | null }
+  | { type: 'ring'; from: MemberId; to: MemberId }
+  | { type: 'ring-answer' }
+  | { type: 'ring-end' }
+  | { type: 'hangup-ring'; to: MemberId }
 
 let uid = 0
 const nextId = (p: string) => `${p}-${Date.now().toString(36)}-${uid++}`
@@ -117,14 +122,34 @@ function applyReply(w: World, member: MemberId, reply: Reply) {
   ask.at = w.now
   if (inc.outcome) return
   if (member === inc.claimed && (reply === 'not-me' || reply === 'yes-me')) {
+    // The named person's own answer is the only final one. It overrides a relative's view.
     inc.outcome = { kind: reply, by: member, at: w.now }
     if (reply === 'yes-me') inc.pauseEndsAt = w.now
   } else if (reply === 'knows-not') {
-    inc.outcome = { kind: 'knows-not', by: member, at: w.now }
+    inc.secondhand ??= { by: member, at: w.now }
   } else if (reply === 'calling') {
     inc.calling = member
+    ring(w, member, 'margaret')
   } else if (reply === 'unsure') {
     askNext(w, inc)
+  }
+}
+
+function ring(w: World, from: MemberId, to: MemberId) {
+  if (w.familyCall && w.familyCall.state !== 'missed') return
+  w.familyCall = { from, to, state: 'ringing', startedAt: w.now }
+}
+
+function closeIncident(w: World, how: 'hung-up' | 'done') {
+  const inc = w.incident
+  if (!inc || inc.closed) return
+  inc.closed = { how, at: w.now }
+  if (w.call && (w.call.state === 'active' || w.call.state === 'ringing')) w.call = null
+  w.log = [logFor(w, inc), ...w.log]
+  if (inc.practice) {
+    w.drill = 'done'
+    const q = w.questions.find((x) => x.id === inc.questionId)
+    if (q) q.practicedDaysAgo = 0
   }
 }
 
@@ -144,6 +169,7 @@ function newIncident(w: World, kind: Incident['kind'], extra: Partial<Incident> 
     tree: [],
     asks: [],
     outcome: null,
+    secondhand: null,
     calling: null,
     closed: null,
     ...extra,
@@ -164,8 +190,8 @@ function logFor(w: World, inc: Incident): LogEntry {
   const who = inc.claimed && inc.claimed !== 'other' ? cap(inc.claimed) : 'an official'
   const how =
     inc.outcome?.kind === 'not-me' ? `${cap(inc.outcome.by)} answered “That’s not me”.`
-    : inc.outcome?.kind === 'knows-not' ? `${cap(inc.outcome.by)} answered “I know where they are — it isn’t them”.`
     : inc.outcome?.kind === 'yes-me' ? `${cap(inc.outcome.by)} answered “Yes, it’s me” from their own phone.`
+    : inc.secondhand ? `${cap(inc.secondhand.by)} answered “I know where ${who} is”.`
     : 'Nobody in the family had answered yet.'
   const ended = inc.closed?.how === 'hung-up' ? ` Mum hung up after ${elapsed(inc.startedAt, w.now)}.` : ''
   if (inc.practice) return { id: inc.id, at: `Today ${clock(w.now)}`, kind: 'practice', title: 'Practice run with Mum', detail: `Finished in ${elapsed(inc.startedAt, w.now)}. Question practised.` }
@@ -207,10 +233,11 @@ function reducer(state: World, action: Action): World {
       }
       const inc = w.incident
       if (inc && !inc.closed && !inc.outcome && inc.claimed) {
-        // phone tree: no answer in N seconds → ask the next person
+        // phone tree: no answer in N seconds → ask the next person.
+        // Stops once a relative has answered; the named person is still asked.
         const lastSent = Math.max(...inc.asks.map((a) => a.sentAt))
         const pending = inc.asks.some((a) => a.state === 'asking')
-        if (!pending || w.now - lastSent >= w.settings.escalateAfterSec * 1000) {
+        if (!inc.secondhand && (!pending || w.now - lastSent >= w.settings.escalateAfterSec * 1000)) {
           if (inc.asks.length < inc.tree.length) askNext(w, inc)
         }
         for (const a of inc.asks) {
@@ -221,13 +248,17 @@ function reducer(state: World, action: Action): World {
           if (rule && w.now - a.sentAt >= rule.afterSec * 1000) applyReply(w, a.member, rule.reply)
         }
       }
+      // family calls: an unanswered ring gives up after 25 s; a face-down phone never answers
+      const fc = w.familyCall
+      if (fc?.state === 'ringing' && w.now - fc.startedAt > 25_000) fc.state = 'missed'
+      if (fc?.state === 'active' && w.now - fc.startedAt > 90_000) w.familyCall = null
       return w
     }
     case 'speed':
       w.speed = action.speed
       return w
     case 'load': {
-      const fresh = baseWorld(state.speed)
+      const fresh = baseWorld(state.speed, state.session + 1)
       const sc = SCENARIOS.find((s) => s.id === action.id)
       fresh.scenarioId = action.id
       if (!sc) return fresh
@@ -283,36 +314,67 @@ function reducer(state: World, action: Action): World {
     case 'question':
       if (w.incident) w.incident.question = action.result
       return w
-    case 'money':
-      if (w.incident) w.incident.money = action.v
+    case 'want': {
+      const inc = w.incident
+      if (!inc) return w
+      inc.money = action.v === 'none' ? 'notyet' : 'yes'
+      inc.method = action.v === 'none' ? null : action.v
       return w
-    case 'method':
-      if (w.incident) w.incident.method = action.v
+    }
+    case 'back': {
+      // Undo the last answer. Going back past “who” withdraws every request
+      // that was sent, so a mis-tap never leaves the wrong person pinged.
+      const inc = w.incident
+      if (!inc || inc.closed || inc.outcome) return w
+      if (inc.money !== null) {
+        inc.money = null
+        inc.method = null
+      } else if (inc.question !== null && inc.question !== 'skipped') {
+        inc.question = null
+      } else if (inc.claimed) {
+        inc.claimed = null
+        inc.tree = []
+        inc.asks = []
+        inc.question = null
+        inc.questionId = undefined
+        inc.secondhand = null
+      }
       return w
-    case 'secret':
-      if (w.incident) w.incident.secret = action.v
-      return w
+    }
     case 'reply':
       applyReply(w, action.member, action.reply)
       return w
     case 'pick-up':
       delete w.busy[action.member]
       return w
-    case 'close': {
-      const inc = w.incident
-      if (!inc || inc.closed) return w
-      inc.closed = { how: action.how, at: w.now }
-      if (w.call && (w.call.state === 'active' || w.call.state === 'ringing')) w.call = null
-      w.log = [logFor(w, inc), ...w.log]
-      if (inc.practice) {
-        w.drill = 'done'
-        if (inc.questionId) {
-          const q = w.questions.find((x) => x.id === inc.questionId)
-          if (q) q.practicedDaysAgo = 0
-        }
+    case 'close':
+      closeIncident(w, action.how)
+      return w
+    case 'hangup-ring':
+      closeIncident(w, 'hung-up')
+      w.call = null
+      if (w.familyCall?.state === 'missed') w.familyCall = null
+      ring(w, 'margaret', action.to)
+      return w
+    case 'ring':
+      if (w.familyCall?.state === 'missed') w.familyCall = null
+      ring(w, action.from, action.to)
+      return w
+    case 'ring-answer': {
+      const fc = w.familyCall
+      if (!fc || fc.state !== 'ringing') return w
+      // Margaret answering family while a stranger is on the line: hang up on the stranger.
+      if (fc.to === 'margaret' && w.call) {
+        closeIncident(w, 'hung-up')
+        w.call = null
       }
+      fc.state = 'active'
+      fc.startedAt = w.now
       return w
     }
+    case 'ring-end':
+      w.familyCall = null
+      return w
     case 'clear-incident':
       if (w.incident) {
         if (!w.incident.closed) {

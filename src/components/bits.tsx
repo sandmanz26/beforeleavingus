@@ -68,9 +68,18 @@ export function Spec({ ids, place = 'tr' }: { ids: string; place?: 'tr' | 'tl' |
   return (
     <span className={`k-spec k-spec--${place}`}>
       {ids.split(' ').map((id) => (
-        <button key={id} className="k-spec__tag" onClick={(e) => { e.stopPropagation(); openFeature(id) }} title={`Open ${id} in the spec`}>
+        // a span, not a <button>: tags often sit inside the very button they annotate
+        <span
+          key={id}
+          role="button"
+          tabIndex={0}
+          className="k-spec__tag"
+          title={`Open ${id} in the spec`}
+          onClick={(e) => { e.stopPropagation(); openFeature(id) }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openFeature(id) } }}
+        >
           {id}
-        </button>
+        </span>
       ))}
     </span>
   )

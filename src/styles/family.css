@@ -212,3 +212,11 @@ p.d-warn svg { flex: none; }
 .r-note__q { font-weight: 800; margin-top: 4px; }
 .r-note--quiet { flex-direction: row; align-items: center; gap: 12px; background: rgba(252, 253, 251, 0.6); box-shadow: none; }
 .r-app .ask { margin: 0; }
+
+/* v2 */
+.ask__signal { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--enamel-2); box-shadow: inset 0 0 0 1.5px var(--navy); font-size: 14px; font-weight: 700; }
+.ask__signal svg { flex: none; margin-top: 1px; }
+.ask__body { font-size: 15px; }
+.ask--handoff { box-shadow: 0 0 0 3px var(--who), 0 6px 0 var(--who); }
+.ask__badge--ink { background: var(--navy); }
+.d-live .ask--done { margin: 0; }
