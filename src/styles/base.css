@@ -1,0 +1,231 @@
+/* KinVoice — design tokens and shared parts.
+   Direction: kitchen enamelware. Duck-egg walls, white enamel, navy rims,
+   a yolk-yellow kettle. Buttons look pressable because shaking hands need
+   to see what is a button. */
+
+:root {
+  --duck: #dce8e4;
+  --duck-2: #c9dbd5;
+  --duck-3: #a9c4bb;
+  --enamel: #fcfdfb;
+  --enamel-2: #f1f5f3;
+  --navy: #14233d;
+  --navy-2: #2b3e60;
+  --navy-deep: #08111f;
+  --ink-2: #4b5a70;
+  --red: #c42b1c;
+  --red-deep: #7e170d;
+  --red-soft: #fbe5e1;
+  --yolk: #f4b740;
+  --yolk-deep: #a8740c;
+  --yolk-soft: #fdf1d3;
+  --plum: #7d3c6b;
+  --teal: #17697a;
+  --cornflower: #3d5fd6;
+  --umber: #8a5a2b;
+  --os-green: #2f8f57;
+  --line: rgba(20, 35, 61, 0.14);
+  --line-2: rgba(20, 35, 61, 0.28);
+
+  --font-display: 'Caprasimo', 'Cooper Black', Georgia, serif;
+  --font-ui: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--duck);
+  color: var(--navy);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+button:disabled { cursor: not-allowed; }
+h1, h2, h3, p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+input, textarea { font: inherit; color: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--yolk);
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ── Buttons: enamel slabs with a pressable bottom edge ───────────── */
+.k-btn {
+  --edge: var(--navy-deep);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 18px;
+  margin-bottom: 5px;
+  border: 2.5px solid var(--navy);
+  border-radius: 14px;
+  background: var(--navy);
+  color: var(--enamel);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.2;
+  text-align: left;
+  box-shadow: 0 5px 0 var(--edge);
+  transition: transform 0.07s ease-out, box-shadow 0.07s ease-out;
+}
+.k-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge); }
+.k-btn:disabled { opacity: 0.45; }
+.k-btn__label { flex: 1; }
+.k-btn__end { flex: none; }
+.k-btn--paper { background: var(--enamel); color: var(--navy); --edge: var(--navy); }
+.k-btn--red { background: var(--red); border-color: var(--red-deep); --edge: var(--red-deep); }
+.k-btn--yolk { background: var(--yolk); color: var(--navy); --edge: var(--navy); }
+.k-btn--ghost {
+  background: transparent; border-color: transparent; box-shadow: none; color: var(--navy);
+  min-height: 44px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; justify-content: center;
+}
+.k-btn--ghost .k-btn__label { flex: none; }
+.k-btn--big { min-height: 78px; font-size: 23px; border-radius: 20px; padding: 14px 22px; gap: 14px; border-width: 3px; }
+
+/* ── Stamps ─────────────────────────────────────────────────────────── */
+.k-stamp { flex: none; display: block; filter: drop-shadow(0 1px 0 rgba(20, 35, 61, 0.25)); }
+.k-stamp.is-dim { opacity: 0.4; filter: grayscale(1); }
+
+/* ── Pills, dots, toggles, segmented ───────────────────────────────── */
+.k-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px 3px 8px; border-radius: 99px;
+  font-size: 13px; font-weight: 700; line-height: 1.3; white-space: nowrap;
+  background: var(--enamel-2); color: var(--navy);
+}
+.k-pill--yolk { background: var(--yolk-soft); color: #5c3f00; box-shadow: inset 0 0 0 1.5px var(--yolk); }
+.k-pill--red { background: var(--red-soft); color: var(--red-deep); }
+.k-pill--ink { background: var(--navy); color: var(--enamel); }
+.k-pill--line { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-2); }
+
+.k-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--yolk); box-shadow: 0 0 0 2px var(--navy); flex: none; }
+.k-dot--red { background: var(--red); }
+.k-dot.is-pulse { animation: k-pulse 1.4s ease-in-out infinite; }
+@keyframes k-pulse { 50% { transform: scale(1.35); box-shadow: 0 0 0 2px var(--navy), 0 0 0 6px rgba(244, 183, 64, 0.35); } }
+
+.k-toggle {
+  position: relative; width: 50px; height: 30px; border-radius: 99px; flex: none;
+  background: var(--duck-3); box-shadow: inset 0 0 0 2px var(--navy); transition: background 0.15s;
+}
+.k-toggle__knob {
+  position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--enamel); box-shadow: 0 0 0 2px var(--navy); transition: transform 0.15s;
+}
+.k-toggle.is-on { background: var(--yolk); }
+.k-toggle.is-on .k-toggle__knob { transform: translateX(20px); }
+
+.k-seg { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--enamel-2); box-shadow: inset 0 0 0 2px var(--navy); gap: 2px; }
+.k-seg button { padding: 7px 12px; border-radius: 9px; font-weight: 700; font-size: 14px; min-height: 36px; }
+.k-seg button.is-on { background: var(--navy); color: var(--enamel); }
+
+/* ── Spec tags (PM annotation layer) ───────────────────────────────── */
+.k-spec { position: absolute; z-index: 5; display: inline-flex; gap: 3px; pointer-events: auto; }
+.k-spec--tr { top: -9px; right: 8px; }
+.k-spec--tl { top: -9px; left: 8px; }
+.k-spec--inline { position: relative; top: auto; right: auto; margin-right: 4px; vertical-align: middle; }
+.k-spec__tag {
+  font: 700 10.5px/1 var(--font-mono); letter-spacing: 0.02em;
+  padding: 4px 6px 3px 12px; border-radius: 3px 6px 6px 3px;
+  background: var(--yolk) radial-gradient(circle at 5px 50%, var(--navy) 1.6px, transparent 2px);
+  color: var(--navy); box-shadow: 0 0 0 1.5px var(--navy);
+  white-space: nowrap;
+}
+.k-spec__tag:hover { background-color: var(--enamel); }
+
+/* ── Phone frame ───────────────────────────────────────────────────── */
+.k-phone {
+  position: relative;
+  width: 384px;
+  height: min(820px, calc(100dvh - 128px));
+  min-height: 600px;
+  display: flex; flex-direction: column;
+  background: var(--enamel);
+  border: 9px solid var(--navy);
+  border-radius: 48px;
+  box-shadow: 0 3px 0 var(--navy-2), 0 34px 60px -34px rgba(8, 17, 31, 0.6);
+  overflow: hidden;
+  isolation: isolate;
+}
+.k-phone__status {
+  flex: none; height: 34px; padding: 4px 26px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  font: 700 14px var(--font-mono);
+  background: var(--enamel);
+  z-index: 3;
+}
+.k-phone__glyphs { display: inline-flex; gap: 6px; align-items: center; }
+.k-phone__screen { position: relative; flex: 1; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; }
+
+.k-busy {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 40px; text-align: center;
+  background: rgba(20, 35, 61, 0.88); color: var(--enamel);
+  backdrop-filter: blur(3px);
+}
+.k-busy__title { font-weight: 800; font-size: 20px; }
+.k-busy__sub { opacity: 0.85; margin-bottom: 10px; }
+.k-busy .k-btn { width: auto; }
+
+/* ── Kettle dial ───────────────────────────────────────────────────── */
+.k-kettle { display: block; }
+.k-steam__p { animation: k-steam 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
+.k-steam__p--1 { animation-delay: 0.5s; }
+.k-steam__p--2 { animation-delay: 1s; }
+@keyframes k-steam {
+  0% { opacity: 0; transform: translateY(6px) scaleY(0.8); }
+  40% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-10px) scaleY(1.1); }
+}
+
+/* ── OS-level chrome (not KinVoice): incoming call + banners ───────── */
+.os-call {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 56px 24px 40px;
+  background: linear-gradient(180deg, #24334d, #0f1a2c);
+  color: #fff; text-align: center;
+}
+.os-call__label { font-size: 15px; opacity: 0.75; }
+.os-call__who { font-size: 34px; font-weight: 600; margin-top: 8px; letter-spacing: -0.01em; }
+.os-call__num { opacity: 0.75; margin-top: 4px; font-family: var(--font-mono); }
+.os-note {
+  position: relative;
+  margin-top: 34px; padding: 16px 18px 18px; border-radius: 18px;
+  background: var(--enamel); color: var(--navy); text-align: left;
+  font-size: 18px; line-height: 1.35;
+  box-shadow: 0 0 0 3px var(--yolk);
+}
+.os-note__brand { font: 700 12px var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); margin-bottom: 6px; }
+.os-call__actions { margin-top: auto; display: flex; justify-content: space-between; width: 100%; padding: 0 12px; }
+.os-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 15px; }
+.os-btn svg { width: 76px; height: 76px; padding: 20px; border-radius: 50%; }
+.os-btn--decline svg { background: #e0443a; }
+.os-btn--accept svg { background: var(--os-green); }
+
+.os-banner {
+  position: absolute; top: 8px; left: 10px; right: 10px; z-index: 12;
+  display: grid; gap: 2px; text-align: left;
+  padding: 12px 14px; border-radius: 18px;
+  background: rgba(252, 253, 251, 0.97);
+  box-shadow: 0 0 0 2px var(--navy), 0 14px 30px -10px rgba(8, 17, 31, 0.5);
+  animation: os-drop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.os-banner__app { font: 700 11px var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); }
+.os-banner b { font-size: 16px; }
+.os-banner span:last-child { font-size: 14px; color: var(--ink-2); }
+@keyframes os-drop { from { transform: translateY(-120%); } }
